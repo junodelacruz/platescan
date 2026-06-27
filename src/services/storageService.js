@@ -1,6 +1,17 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LOG_KEY = 'platescan:foodLog';
+const GOAL_KEY = 'platescan:dailyCalorieGoal';
+const DEFAULT_GOAL = 1900;
+
+export async function getCalorieGoal() {
+  const raw = await AsyncStorage.getItem(GOAL_KEY);
+  return raw ? parseInt(raw, 10) : DEFAULT_GOAL;
+}
+
+export async function setCalorieGoal(goal) {
+  await AsyncStorage.setItem(GOAL_KEY, goal.toString());
+}
 
 export async function getFoodLog() {
   const raw = await AsyncStorage.getItem(LOG_KEY);

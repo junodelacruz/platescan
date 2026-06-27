@@ -5,6 +5,13 @@ Building **PlateScan**, a calorie-tracking mobile app that lets users photograph
 
 **Immediate status:** Web build (`dist/`) is the latest deployed artifact. All critical bugs in `HomeScreen.js` have been fixed and the web bundle rebuilt. PWA viewport fixes applied to `dist/index.html` (viewport-fit=cover, PWA meta tags, status bar override).
 
+### Recent Feature: User-Configurable Daily Calorie Goal
+- Added `SettingsScreen.js` — new screen with +/- adjustment buttons and save
+- `storageService.js` — added `getCalorieGoal()` / `setCalorieGoal(goal)` with AsyncStorage key `platescan:dailyCalorieGoal`, default 1900
+- `HomeScreen.js` — replaced hardcoded `DAILY_CALORIE_GOAL` import with local state loaded from AsyncStorage; added Settings link in header (Settings | Calendar)
+- `App.js` — added `Settings` route to Stack Navigator
+- User can now change their daily calorie goal from the Settings screen; changes persist in AsyncStorage
+
 ---
 
 ## 2. TECH STACK & ARCHITECTURE
@@ -27,6 +34,7 @@ Building **PlateScan**, a calorie-tracking mobile app that lets users photograph
 | expo-status-bar | ~3.0.9 |
 
 ### Deployment (Web)
+
 - **Build command:** `npx expo export --platform web --output-dir dist`
 - **Server:** NGINX (nginx:alpine) via docker-compose
 - **Mount:** `./dist:/usr/share/nginx/html:ro`
@@ -161,7 +169,7 @@ import { colors, typography } from '../theme';
 ## 5. USER PREFERENCES
 
 ### Development Workflow
-- Codes locally on **Windows 11** using VS Code
+- Codes locally on **Windows 11** using Antigravity IDE
 - **Upload workflow:** Build `dist/` locally -> upload to separate server -> Docker-compose handles deployment
 - Server runs **nginx:alpine** container mounting `./dist:/usr/share/nginx/html:ro`
 - Server port: 8085 mapped to container port 80

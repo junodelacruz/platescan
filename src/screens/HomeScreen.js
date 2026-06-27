@@ -1,10 +1,9 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Modal } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import PlateRing from '../components/PlateRing';
 import { getFoodLog, getTodayEntries, deleteFoodEntry } from '../services/storageService';
-import { DAILY_CALORIE_GOAL } from '../config';
+import { getCalorieGoal } from '../services/storageService';
 import { colors, typography } from '../theme';
 
 const MEAL_TYPE_COLORS = {
@@ -16,6 +15,7 @@ const MEAL_TYPE_COLORS = {
 
 export default function HomeScreen({ navigation }) {
   const [todayEntries, setTodayEntries] = useState([]);
+  const [goal, setGoal] = useState(1900);
 
   const refresh = useCallback(async () => {
     const log = await getFoodLog();
@@ -24,7 +24,7 @@ export default function HomeScreen({ navigation }) {
 
   useFocusEffect(
     useCallback(() => {
-      refresh();
+      Promise.all([refresh(), getCalorieGoal().then(g => setGoal(g))]);
     }, [refresh])
   );
 
@@ -35,26 +35,23 @@ export default function HomeScreen({ navigation }) {
     refresh();
   };
 
-  const handleCalorieGoalChange = async (goal) => {
-    try {
-      await AsyncStorage.setItem('DAILY_CALORIE_GOAL', goal.toString());
-      Alert.alert('Success', `Daily calorie goal updated to ${goal} kcal`);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
         <Text style={styles.title}>Today's Plate</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('History')}>
-          <Text style={styles.link}>Calendar</Text>
-        </TouchableOpacity>
+        <View style={styles.links}>
+          <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
+            <Text style={styles.link}>Settings</Text>
+          </TouchableOpacity>
+          <Text style={[styles.link, styles.linkSeparator]}>|</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('History')}>
+            <Text style={styles.link}>Calendar</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.ringWrap}>
-        <PlateRing consumed={totalCalories} goal={DAILY_CALORIE_GOAL} />
+        <PlateRing consumed={totalCalories} goal={goal} />
       </View>
 
       <FlatList
@@ -101,7 +98,9 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   title: { fontSize: 24, color: colors.ink, ...typography.display },
+  links: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   link: { fontSize: 14, color: colors.forest, ...typography.label },
+  linkSeparator: { color: colors.inkMuted },
   ringWrap: { alignItems: 'center', marginVertical: 20 },
   list: { paddingHorizontal: 24, paddingBottom: 110 },
   empty: { textAlign: 'center', color: colors.inkMuted, marginTop: 20 },
