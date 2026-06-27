@@ -1,0 +1,9 @@
+services:
+  platescan:
+    image: nginx:alpine
+    container_name: platescan-web
+    restart: unless-stopped
+    ports:
+      - "8085:80" # Map to whatever port you want to use on your home server
+    volumes:
+      - ./dist:/usr/share/nginx/html:ro

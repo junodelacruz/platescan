@@ -1,0 +1,5 @@
+[TERMINAL COMPATIBILITY]
+You are operating inside a Windows 11 environment utilizing standard PowerShell. 
+Always use PowerShell-compatible formatting:
+- Use backslashes (\) for file paths in scripts.
+- Do not use 'grep', use 'Select-String' if native PowerShell is required, though standard 'ls' (Get-ChildItem) aliases are fully supported.

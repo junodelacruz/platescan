@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "PlateScan",
+    "slug": "platescan",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "PlateScan uses your camera to scan plates of food for calorie estimation.",
+        "NSPhotoLibraryUsageDescription": "PlateScan needs photo library access so you can pick an existing food photo."
+      }
+    },
+    "android": {
+      "permissions": ["CAMERA"]
+    }
+  }
+}
