@@ -1,5 +1,13 @@
-[TERMINAL COMPATIBILITY]
-You are operating inside a Windows 11 environment utilizing standard PowerShell. 
-Always use PowerShell-compatible formatting:
-- Use backslashes (\) for file paths in scripts.
-- Do not use 'grep', use 'Select-String' if native PowerShell is required, though standard 'ls' (Get-ChildItem) aliases are fully supported.
+# Memory Bank Protocol
+You are operating in a 64k restricted context window. To prevent memory loss, we use a file-based Memory Bank in the root directory. 
+
+You must maintain these files:
+- `memory-bank/product-context.md`: The "why" and core features of the app.
+- `memory-bank/system-architecture.md`: The technical stack, file structures, and data models.
+- `memory-bank/active-context.md`: What component we are building *right now* and what is blocked.
+- `memory-bank/progress.md`: A checklist of what works and what is next.
+
+CRITICAL RULE: Before completing any task or when you feel the context window getting full, you MUST read and update these markdown files to reflect the exact current state of the code.
+
+# CLI Rules
+You are working in a Windows 11 environment utilizing powershell. Do not use commands that will return with errors.
