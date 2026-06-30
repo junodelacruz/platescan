@@ -47,7 +47,7 @@ export default function ScanScreen({ navigation }) {
     setLoading(true);
     try {
       const analysis = await analyzeFoodImage(asset.base64);
-      navigation.replace('Result', { analysis, imageUri: asset.uri });
+      navigation.replace('Result', { analysis, imageUri: asset.uri, imageBase64: asset.base64 });
     } catch (err) {
       Alert.alert('Scan failed', err.message || 'Could not analyze this photo. Try again.');
     } finally {

@@ -32,7 +32,7 @@ function getDefaultMealType() {
 }
 
 export default function ResultScreen({ route, navigation }) {
-  const { analysis, imageUri } = route.params;
+  const { analysis, imageUri, imageBase64 } = route.params;
   const [items, setItems] = useState(analysis.items || []);
   const [mealType, setMealType] = useState(getDefaultMealType());
 
@@ -48,8 +48,8 @@ export default function ResultScreen({ route, navigation }) {
     const entryId = String(Date.now());
     let finalImageUri = imageUri;
 
-    // Copy image from temp URI to persistent storage (native only — web doesn't need this)
     if (imageUri && Platform.OS !== 'web') {
+      // Native: copy image from temp URI to persistent file storage
       try {
         const platesDir = `${FileSystem.documentDirectory}plates/`;
         const exists = (await FileSystem.getInfoAsync(platesDir)).exists;
@@ -62,6 +62,9 @@ export default function ResultScreen({ route, navigation }) {
       } catch (e) {
         console.warn('Failed to persist image:', e);
       }
+    } else if (imageUri && Platform.OS === 'web' && imageBase64) {
+      // Web: convert base64 string to a data: URI so it survives page reload
+      finalImageUri = `data:image/jpeg;base64,${imageBase64}`;
     }
 
     await addFoodEntry({
