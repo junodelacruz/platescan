@@ -23,6 +23,9 @@ Pending future work: Consider wrapping ScanScreen in `useSafeAreaInsets` for dyn
 - Each plate entry now persists a `macros` object with `protein`, `carbs`, `fat` (grams) aggregated from items.
 - Images are copied to a persistent `plates/` directory via `expo-file-system` instead of relying on temp URIs.
 
+## Resolved decisions from this session (continued)
+- **Web image persistence fix** — On web, `imageBase64` from `expo-image-picker` is converted to a `data:image/jpeg;base64,...` URI in ResultScreen.js (lines 65–68). This base64 data URI survives page reloads via AsyncStorage, replacing the ephemeral `file://` cache path that was previously lost on re-open. Platform-specific guard: `Platform.OS !== 'web'` triggers `copyAsync` (native), while `Platform.OS === 'web' && imageBase64` triggers the data: URI approach.
+
 ## Things to double-check if resuming cold
 - Confirm `HomeScreen.js` doesn't still have the duplicate-`handleDelete` bug that was introduced and fixed mid-session.
 - `config.js` has a real, unredacted Gemini API key checked into the file — not a blocker, but worth keeping in mind before sharing.

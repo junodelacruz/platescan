@@ -9,3 +9,4 @@
 - [x] Image persistence — images copied to `plates/` directory
 - [x] **Shared BackButton component** — `src/components/BackButton.js` created, used by PlateDetailScreen, ScanScreen, HistoryScreen, SettingsScreen
 - [x] **Standardized back button** — "← Back" in white text, fontSize 16, fontWeight '600' across all 4 screens
+- [x] **Web image persistence fix** — ResultScreen.js now converts `imageBase64` to a `data:image/jpeg;base64,...` URI on web (lines 65–68), stored in AsyncStorage via `addFoodEntry`. Native platforms keep the existing `copyAsync` → `FileSystem.documentDirectory` approach. No changes needed in storageService.js.
