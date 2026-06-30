@@ -9,6 +9,7 @@ export const colors = {
   forest: '#4E7C62',     // secondary accent (confirm / save)
   gold: '#D9A441',       // tertiary highlight, used sparingly
   border: '#3E342B',     // dark brown separator
+  white: '#FFFFFF',
 };
 
 // Using system fonts by default so the app runs with zero extra setup.

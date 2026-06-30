@@ -9,15 +9,12 @@
 > If you run the raw Expo export command, `dist/index.html` will have **no** PWA support, **no** `viewport-fit=cover`, **no** dark background on `<html>/<body>`, and the white bar will return.
 
 ## What was just being worked on
-Extended the plate-entry data model to persist a `macros` object (protein, carbs, fat in grams) and a persistent image path. Changes made to `storageService.js` (auto-aggregates macros from items if missing) and `ResultScreen.js` (copies temp image to `FileSystem.documentDirectory + 'plates/' + ${entryId}.jpg`). The AI schema already returned protein/carbs/fat per item, so `aiService.js` required no changes.
+Created a shared **`BackButton`** component (`src/components/BackButton.js`) and migrated all 4 screens (PlateDetailScreen, ScanScreen, HistoryScreen, SettingsScreen) to use it, standardizing the back button to: "← Back" in white text, fontSize 16, fontWeight '600'. Added `colors.white` token to theme.js.
 
 ## Immediate next step (recommended)
-Fix **`HistoryScreen.js`** — it's the one remaining place still importing/using the hardcoded `DAILY_CALORIE_GOAL` from `config.js` instead of the new `getCalorieGoal()` AsyncStorage value. Apply the same pattern already used in `HomeScreen.js`:
-1. Replace `import { DAILY_CALORIE_GOAL } from '../config';` with `import { getCalorieGoal } from '../services/storageService';`
-2. Add `const [goal, setGoal] = useState(1900);` and load it in the existing `useFocusEffect`/`refresh`, the same way `HomeScreen.js` does: `Promise.all([refresh(), getCalorieGoal().then(g => setGoal(g))])`.
-3. Replace the 3 usages of `DAILY_CALORIE_GOAL` in the file (the `isOver` calculation, the over/under color check, and the `{selectedTotal} / {DAILY_CALORIE_GOAL} kcal` display) with `goal`.
+No immediate next steps. All 4 screens now share the BackButton component. The `npm run build:web` build completed successfully into the `dist` folder.
 
-After that, run `npm run build:web` to confirm the build succeeds and the patched `dist/index.html` is correct.
+Pending future work: Consider wrapping ScanScreen in `useSafeAreaInsets` for dynamic status-bar padding on notched devices (currently relies on SafeAreaView padding).
 
 ## Resolved decisions from this session
 - Settings UI approach: a **dedicated screen**, not a modal/popup, not a PlateRing long-press.

@@ -8,10 +8,12 @@ import {
   ActivityIndicator,
   Alert,
   SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { analyzeFoodImage } from '../services/aiService';
 import { colors, typography } from '../theme';
+import BackButton from '../components/BackButton';
 
 export default function ScanScreen({ navigation }) {
   const [imageUri, setImageUri] = useState(null);
@@ -57,11 +59,8 @@ export default function ScanScreen({ navigation }) {
     <SafeAreaView style={styles.safe}>
       {/* Inner container enforces horizontal margins and clips overflow */}
       <View style={styles.inner}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Text style={styles.backText}>‹ Back</Text>
-          </TouchableOpacity>
-        </View>
+        <StatusBar barStyle="light-content" />
+        <BackButton onPress={() => navigation.goBack()} />
         <Text style={styles.title}>Scan Your Plate</Text>
         <Text style={styles.subtitle}>Center the plate in frame — good lighting helps accuracy.</Text>
 
@@ -101,9 +100,6 @@ const styles = StyleSheet.create({
     paddingBottom: 36,
     overflow: 'hidden',
   },
-  header: { paddingTop: 16, paddingBottom: 6 },
-  backBtn: { alignSelf: 'flex-start', paddingVertical: 8, paddingRight: 16 },
-  backText: { fontSize: 16, color: colors.forest, fontWeight: '600' },
   title: { fontSize: 24, color: colors.ink, ...typography.display, marginTop: 10 },
   subtitle: { fontSize: 14, color: colors.inkMuted, marginTop: 8, marginBottom: 24 },
   preview: {

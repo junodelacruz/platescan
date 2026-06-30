@@ -8,6 +8,7 @@ import {
   Image,
   StyleSheet,
   SafeAreaView,
+  Platform,
 } from 'react-native';
 import FileSystem from 'expo-file-system';
 import { addFoodEntry } from '../services/storageService';
@@ -47,19 +48,18 @@ export default function ResultScreen({ route, navigation }) {
     const entryId = String(Date.now());
     let finalImageUri = imageUri;
 
-    // Copy image from temp URI to persistent storage
-    if (imageUri) {
-      const platesDir = `${FileSystem.documentDirectory}plates/`;
-      const exists = (await FileSystem.getInfoAsync(platesDir)).exists;
-      if (!exists) {
-        await FileSystem.makeDirectoryAsync(platesDir, { intermediates: false });
-      }
-      const destUri = `${platesDir}${entryId}.jpg`;
+    // Copy image from temp URI to persistent storage (native only — web doesn't need this)
+    if (imageUri && Platform.OS !== 'web') {
       try {
+        const platesDir = `${FileSystem.documentDirectory}plates/`;
+        const exists = (await FileSystem.getInfoAsync(platesDir)).exists;
+        if (!exists) {
+          await FileSystem.makeDirectoryAsync(platesDir, { intermediates: true });
+        }
+        const destUri = `${platesDir}${entryId}.jpg`;
         await FileSystem.copyAsync({ from: imageUri, to: destUri });
         finalImageUri = destUri;
       } catch (e) {
-        // Fall back to original URI if copy fails
         console.warn('Failed to persist image:', e);
       }
     }

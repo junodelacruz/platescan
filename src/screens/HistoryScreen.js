@@ -11,6 +11,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { getFoodLog, deleteFoodEntry } from '../services/storageService';
 import { DAILY_CALORIE_GOAL } from '../config';
 import { colors, typography } from '../theme';
+import BackButton from '../components/BackButton';
 
 const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = [
@@ -94,9 +95,7 @@ export default function HistoryScreen({ navigation }) {
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
         <Text style={styles.screenTitle}>Calendar</Text>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backLink}>Back</Text>
-        </TouchableOpacity>
+        <BackButton onPress={() => navigation.goBack()} />
       </View>
 
       {/* Month navigation */}
@@ -210,7 +209,6 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   screenTitle: { fontSize: 24, color: colors.ink, ...typography.display },
-  backLink: { fontSize: 14, color: colors.forest, ...typography.label },
 
   // Month nav
   monthNav: {

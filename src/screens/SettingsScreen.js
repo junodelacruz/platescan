@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { colors, typography } from '../theme';
 import { getCalorieGoal, setCalorieGoal } from '../services/storageService';
+import BackButton from '../components/BackButton';
 
 export default function SettingsScreen({ navigation }) {
   const [goal, setGoal] = useState(1900);
@@ -35,9 +36,7 @@ export default function SettingsScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backLink}>Back</Text>
-        </TouchableOpacity>
+        <BackButton onPress={() => navigation.goBack()} />
         <Text style={styles.screenTitle}>Settings</Text>
         <View style={{ width: 60 }} />
       </View>
@@ -94,7 +93,6 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   screenTitle: { fontSize: 24, color: colors.ink, ...typography.display },
-  backLink: { fontSize: 14, color: colors.forest, ...typography.label },
 
   content: {
     flex: 1,

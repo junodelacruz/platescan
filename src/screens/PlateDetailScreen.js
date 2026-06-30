@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar } from 'react-native';
 import { deleteFoodEntry } from '../services/storageService';
 import { colors, typography } from '../theme';
+import BackButton from '../components/BackButton';
 
 const FALLBACK_COLOR = colors.border;
 
@@ -28,6 +29,7 @@ export default function PlateDetailScreen({ route, navigation }) {
     return (
         <SafeAreaView style={styles.safe}>
             <StatusBar style="light" />
+            <BackButton onPress={() => navigation.goBack()} />
             <Image
                 source={entry.imageUri ? { uri: entry.imageUri } : undefined}
                 style={styles.image}
