@@ -20,9 +20,9 @@ const MONTHS = [
 
 const MEAL_TYPE_COLORS = {
   Breakfast: '#D9A441',
-  Lunch:     '#4E7C62',
-  Dinner:    '#E05D44',
-  Snack:     '#7A6EA0',
+  Lunch: '#4E7C62',
+  Dinner: '#E05D44',
+  Snack: '#7A6EA0',
 };
 
 // Returns a "YYYY-MM-DD" key for any date
@@ -169,7 +169,11 @@ export default function HistoryScreen({ navigation }) {
         ) : (
           selectedEntries.map((entry) => (
             <View key={entry.id} style={styles.mealRow}>
-              <View style={{ flex: 1 }}>
+              <TouchableOpacity
+                style={styles.mealRowContent}
+                activeOpacity={0.6}
+                onPress={() => navigation.navigate('PlateDetail', { entry })}
+              >
                 <View style={styles.mealTopRow}>
                   <Text style={styles.mealName}>{entry.label}</Text>
                   {entry.mealType && (
@@ -179,8 +183,12 @@ export default function HistoryScreen({ navigation }) {
                   )}
                 </View>
                 <Text style={styles.mealCal}>{entry.totalCalories} kcal</Text>
-              </View>
-              <TouchableOpacity onPress={() => handleDelete(entry.id)}>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.mealDelete}
+                activeOpacity={0.6}
+                onPress={() => handleDelete(entry.id)}
+              >
                 <Text style={styles.removeText}>Remove</Text>
               </TouchableOpacity>
             </View>
@@ -307,6 +315,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+  },
+  mealRowContent: {
+    flex: 1,
+  },
+  mealDelete: {
+    marginLeft: 12,
   },
   mealTopRow: {
     flexDirection: 'row',

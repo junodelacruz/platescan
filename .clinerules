@@ -1,13 +1,20 @@
-# Memory Bank Protocol
-You are operating in a 64k restricted context window. To prevent memory loss, we use a file-based Memory Bank in the root directory. 
+# PROFILE & HARDWARE CONSTRAINTS
+- Environment: Windows 11 (PowerShell). Use strict, valid Win/PS syntax only.
+- Constraints: Operating in a strictly limited 64k local context on low VRAM.
+- CRITICAL: Limit `<think>` reasoning blocks to a maximum of 2-3 sentences. Do not over-deliberate or loop. Move to execution immediately.
 
-You must maintain these files:
-- `memory-bank/product-context.md`: The "why" and core features of the app.
-- `memory-bank/system-architecture.md`: The technical stack, file structures, and data models.
-- `memory-bank/active-context.md`: What component we are building *right now* and what is blocked.
-- `memory-bank/progress.md`: A checklist of what works and what is next.
+# MEMORY BANK PROTOCOL (Root `.memory_bank/`)
+- On Task Start: Read files in `.memory_bank/` ONCE to align mental model. Do not continuously re-read them unless architecture or context changes.
+- On Task End: Update `active-context.md` and `progress.md` with absolute latest state before declaring success.
+- Core Files: `product-context.md` (Why/Features), `system-architecture.md` (Tech stack/Data models), `active-context.md` (Current focus/Blocks), `progress.md` (Checklist).
+- Context Limit: If context feels full, sync state to these files immediately to prevent memory loss.
 
-CRITICAL RULE: Before completing any task or when you feel the context window getting full, you MUST read and update these markdown files to reflect the exact current state of the code.
+## 1. Minimal & Surgical Execution
+- State assumptions explicitly before coding; ask if uncertain. Present tradeoffs over silent decisions.
+- Write the absolute minimum code required. No speculative features, unrequested abstractions, or predictive configs.
+- Touch only what is requested. Match existing style perfectly. Do not "improve" or refactor adjacent, working code.
+- Clean up orphans (imports/variables) created by YOUR changes. Do not touch pre-existing dead code.
 
-# CLI Rules
-You are working in a Windows 11 environment utilizing powershell. Do not use commands that will return with errors.
+## 2. Goal-Driven Loop
+- Convert tasks into strict, verifiable milestones (Plan -> Execute -> Verify).
+- Rely on automated tests or explicit console outputs for independent verification.

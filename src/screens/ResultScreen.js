@@ -9,6 +9,7 @@ import {
   StyleSheet,
   SafeAreaView,
 } from 'react-native';
+import FileSystem from 'expo-file-system';
 import { addFoodEntry } from '../services/storageService';
 import { colors, typography } from '../theme';
 
@@ -16,9 +17,9 @@ const MEAL_TYPES = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
 
 const MEAL_TYPE_COLORS = {
   Breakfast: '#D9A441', // gold — morning warmth
-  Lunch:     '#4E7C62', // forest — midday
-  Dinner:    '#E05D44', // tomato — evening
-  Snack:     '#7A6EA0', // soft purple — in-between
+  Lunch: '#4E7C62', // forest — midday
+  Dinner: '#E05D44', // tomato — evening
+  Snack: '#7A6EA0', // soft purple — in-between
 };
 
 function getDefaultMealType() {
@@ -43,10 +44,30 @@ export default function ResultScreen({ route, navigation }) {
   };
 
   const handleSave = async () => {
+    const entryId = String(Date.now());
+    let finalImageUri = imageUri;
+
+    // Copy image from temp URI to persistent storage
+    if (imageUri) {
+      const platesDir = `${FileSystem.documentDirectory}plates/`;
+      const exists = (await FileSystem.getInfoAsync(platesDir)).exists;
+      if (!exists) {
+        await FileSystem.makeDirectoryAsync(platesDir, { intermediates: false });
+      }
+      const destUri = `${platesDir}${entryId}.jpg`;
+      try {
+        await FileSystem.copyAsync({ from: imageUri, to: destUri });
+        finalImageUri = destUri;
+      } catch (e) {
+        // Fall back to original URI if copy fails
+        console.warn('Failed to persist image:', e);
+      }
+    }
+
     await addFoodEntry({
-      id: String(Date.now()),
+      id: entryId,
       timestamp: Date.now(),
-      imageUri,
+      imageUri: finalImageUri,
       label: items.map((i) => i.name).join(', ') || 'Plate',
       items,
       totalCalories: total,

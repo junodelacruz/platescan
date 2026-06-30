@@ -8,6 +8,7 @@ import ScanScreen from './src/screens/ScanScreen';
 import ResultScreen from './src/screens/ResultScreen';
 import HistoryScreen from './src/screens/HistoryScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
+import PlateDetailScreen from './src/screens/PlateDetailScreen';
 import { colors } from './src/theme';
 
 const Stack = createNativeStackNavigator();
@@ -27,6 +28,7 @@ export default function App() {
         <Stack.Screen name="Result" component={ResultScreen} />
         <Stack.Screen name="History" component={HistoryScreen} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
+        <Stack.Screen name="PlateDetail" component={PlateDetailScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

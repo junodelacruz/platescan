@@ -63,7 +63,11 @@ export default function HomeScreen({ navigation }) {
         }
         renderItem={({ item }) => (
           <View style={styles.entryRow}>
-            <View style={{ flex: 1 }}>
+            <TouchableOpacity
+              style={styles.rowContent}
+              activeOpacity={0.6}
+              onPress={() => navigation.navigate('PlateDetail', { entry: item })}
+            >
               <View style={styles.entryTopRow}>
                 <Text style={styles.entryName}>{item.label}</Text>
                 {item.mealType ? (
@@ -73,8 +77,12 @@ export default function HomeScreen({ navigation }) {
                 ) : null}
               </View>
               <Text style={styles.entrySub}>{item.totalCalories} kcal</Text>
-            </View>
-            <TouchableOpacity onPress={() => handleDelete(item.id)}>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.deleteButton}
+              activeOpacity={0.6}
+              onPress={() => handleDelete(item.id)}
+            >
               <Text style={styles.remove}>Remove</Text>
             </TouchableOpacity>
           </View>
@@ -116,6 +124,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
+  rowContent: { flex: 1 },
+  deleteButton: { marginLeft: 12 },
   entryName: { fontSize: 16, color: colors.ink, fontWeight: '600', flexShrink: 1 },
   entrySub: { fontSize: 13, color: colors.inkMuted, marginTop: 3 },
   badge: {
