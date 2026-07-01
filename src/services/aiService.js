@@ -61,7 +61,7 @@ async function callOpenAICompatible(base64Image) {
           ],
         },
       ],
-      max_tokens: 800,
+      max_tokens: 2000,
     }),
   });
 
@@ -83,7 +83,7 @@ async function callAnthropic(base64Image) {
     },
     body: JSON.stringify({
       model: AI_CONFIG.model,
-      max_tokens: 800,
+      max_tokens: 2000,
       system: SYSTEM_PROMPT,
       messages: [
         {
@@ -131,7 +131,7 @@ async function callGemini(base64Image) {
             },
           ],
           generationConfig: {
-            maxOutputTokens: 800,
+            maxOutputTokens: 2000,
             responseMimeType: 'application/json',
             responseSchema: {
               type: 'OBJECT',

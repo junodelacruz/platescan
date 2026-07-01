@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar } from 'react-native';
-import { deleteFoodEntry } from '../services/storageService';
+import React, { useState, useEffect } from 'react';
+import { View, Text, Image, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, ActivityIndicator } from 'react-native';
+import { deleteFoodEntry, loadImage } from '../services/storageService';
 import { colors, typography } from '../theme';
 import BackButton from '../components/BackButton';
 
@@ -9,10 +9,29 @@ const FALLBACK_COLOR = colors.border;
 export default function PlateDetailScreen({ route, navigation }) {
     const { entry } = route.params;
     const title = entry.label || entry.name || 'Plate Details';
+    const [imageUri, setImageUri] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     React.useEffect(() => {
         navigation.setOptions({ title });
     }, [navigation, title]);
+
+    React.useEffect(() => {
+        let mounted = true;
+        (async () => {
+            setLoading(true);
+            if (entry.imageId) {
+                const uri = await loadImage(entry.imageId);
+                if (mounted) {
+                    setImageUri(uri || null);
+                    setLoading(false);
+                }
+            } else {
+                if (mounted) setLoading(false);
+            }
+        })();
+        return () => { mounted = false; };
+    }, [entry.imageId]);
 
     const handleDelete = async () => {
         await deleteFoodEntry(entry.id);
@@ -30,12 +49,18 @@ export default function PlateDetailScreen({ route, navigation }) {
         <SafeAreaView style={styles.safe}>
             <StatusBar style="light" />
             <BackButton onPress={() => navigation.goBack()} />
-            <Image
-                source={entry.imageUri ? { uri: entry.imageUri } : undefined}
-                style={styles.image}
-                resizeMethod="resize"
-                fallbackColor={FALLBACK_COLOR}
-            />
+            {loading ? (
+                <View style={styles.imageLoader}>
+                    <ActivityIndicator size="large" color={colors.inkMuted} />
+                </View>
+            ) : (
+                <Image
+                    source={imageUri ? { uri: imageUri } : undefined}
+                    style={styles.image}
+                    resizeMethod="resize"
+                    fallbackColor={FALLBACK_COLOR}
+                />
+            )}
             <View style={styles.body}>
                 <Text style={styles.name}>{label}</Text>
                 <Text style={styles.calories}>{calories} kcal</Text>
@@ -74,6 +99,13 @@ const styles = StyleSheet.create({
         width: '100%',
         height: 220,
         backgroundColor: FALLBACK_COLOR,
+    },
+    imageLoader: {
+        width: '100%',
+        height: 220,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: colors.border,
     },
     body: {
         padding: 24,

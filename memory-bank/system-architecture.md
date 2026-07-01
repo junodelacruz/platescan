@@ -33,30 +33,36 @@ platescan/
 │   ├── metadata.json
 │   ├── _expo/static/js/web/AppEntry-*.js
 │   └── assets/node_modules/...
-├── memory/
-│   └── memory.md                  ← legacy single-file project memory bank (now being split into these 4 files)
+├── memory-bank/
+│   ├── product-context.md          ← why / features
+│   ├── system-architecture.md      ← this file
+│   ├── active-context.md           ← current focus / blocks
+│   └── progress.md                 ← task checklist
 ├── src/
-│   ├── config.js                   ← AI provider config + legacy DAILY_CALORIE_GOAL constant (see note below)
-│   ├── theme.js                    ← colors (dark warm theme) + typography tokens
+│   ├── config.js                   ← AI provider config
+│   ├── theme.js                    ← colors + typography tokens
 │   ├── components/
-│   │   └── PlateRing.js            ← circular SVG progress ring (consumed vs goal). NOT touched/re-read this session — assume unchanged.
+│   │   └── PlateRing.js            ← circular SVG progress ring
 │   ├── screens/
-│   │   ├── HomeScreen.js           ← today's log + plate ring + Settings/Calendar header links
-│   │   ├── ScanScreen.js           ← camera/photo picker → AI call. NOT touched this session.
-│   │   ├── ResultScreen.js         ← AI results display, editable, save. NOT touched this session.
-│   │   ├── HistoryScreen.js        ← calendar / past-days view — ⚠️ still on the hardcoded goal, see progress.md
-│   │   └── SettingsScreen.js       ← NEW — lets the user view/adjust/save the daily calorie goal
+│   │   ├── HomeScreen.js           ← today's log + plate ring + header links
+│   │   ├── ScanScreen.js           ← camera/photo picker → AI call
+│   │   ├── ResultScreen.js         ← AI results display, editable, save
+│   │   ├── PlateDetailScreen.js    ← NEW (v2) — full-screen plate image + calorie details + delete
+│   │   ├── HistoryScreen.js        ← calendar / past-days view
+│   │   └── SettingsScreen.js       ← user-adjustable daily calorie goal
 │   └── services/
-│       ├── aiService.js            ← AI provider abstraction, single entry analyzeFoodImage(base64Image). NOT touched this session.
-│       └── storageService.js       ← AsyncStorage wrapper — now also owns calorie-goal persistence
+│       ├── aiService.js            ← AI provider abstraction
+│       └── storageService.js       ← AsyncStorage (metadata) + IndexedDB (images)
 ```
 
 ## Navigation
-`App.js` registers a `Stack.Navigator` (`headerShown: false`, dark `contentStyle` background) with 5 screens:
+`App.js` registers a `Stack.Navigator` (`headerShown: false`, dark `contentStyle` background) with 6 screens:
 
-`Home → Scan → Result → History → Settings`
+`Home → Scan → Result → PlateDetail → History → Settings`
 
 - `Home` is the initial route.
+- `Result` → `PlateDetail` via "View Full" button (taps on scan thumbnail).
+- `PlateDetail` → back via `BackButton` (goBack).
 - `Settings` is reached from Home's header ("Settings | Calendar" links) and returns via `navigation.goBack()`.
 
 ## AI Provider Architecture
@@ -77,20 +83,40 @@ export const AI_CONFIG = {
   apiKey: '<a real key is currently hardcoded here — redacted in this doc>',
   model: 'gemini-2.5-flash',
 };
-export const DAILY_CALORIE_GOAL = 1900; // legacy fallback constant — see note in progress.md
+export const DAILY_CALORIE_GOAL = 1900; // legacy fallback constant
 ```
 
 ⚠️ **Security note:** an actual Gemini API key is hardcoded in plaintext in `config.js`. It is intentionally not reproduced in these memory files. If this repo is ever pushed to a public remote, move the key to an env var or a `.gitignore`d local file and rotate it.
 
 ## Data / Storage Layer
-All persistence goes through `src/services/storageService.js` (AsyncStorage — **never** `localStorage`; this is React Native, not a browser).
+**Hybrid persistence** — metadata via AsyncStorage, image blobs via IndexedDB:
 
-| Key | Purpose | Default | Functions |
-|---|---|---|---|
-| `platescan:foodLog` | Array of food-entry objects (`id`, `label`, `totalCalories`, `mealType`, `timestamp`, ...) | `[]` | `getFoodLog()`, `addFoodEntry(entry)`, `deleteFoodEntry(id)`, `getTodayEntries(log)`, `groupByDay(log)` |
-| `platescan:dailyCalorieGoal` | User's daily calorie target (int) | `1900` (a local `DEFAULT_GOAL` const in `storageService.js`, duplicated from — not imported from — `config.js`) | `getCalorieGoal()`, `setCalorieGoal(goal)` |
+| Storage | Key / Name | Purpose | Default | Functions |
+|---|---|---|---|---|
+| **AsyncStorage** | `platescan:foodLog` | Array of food-entry objects | `[]` | `getFoodLog()`, `addFoodEntry()`, `deleteFoodEntry()`, `getTodayEntries()`, `groupByDay()` |
+| **AsyncStorage** | `platescan:dailyCalorieGoal` | User's daily calorie target | `1900` | `getCalorieGoal()`, `setCalorieGoal()` |
+| **IndexedDB** | `platescan-db` (object store: `foodImages`) | Binary image blobs keyed by food entry ID | new DB | `saveImageToIndexedDB(id, blob)`, `loadImageFromIndexedDB(id)`, `deleteImageFromIndexedDB(id)` |
 
-⚠️ Note: the default `1900` now lives in **two** places — `config.js`'s `DAILY_CALORIE_GOAL` and `storageService.js`'s `DEFAULT_GOAL`. They agree today but aren't linked; changing one won't update the other.
+### Image Storage Flow (IndexedDB, web target)
+1. `ResultScreen` calls `saveFoodEntry(entry, imageUri)` — `entry.imageId` is `uuid.v4()`.
+2. If `imageUri` exists and exceeds **400 KB** (`imageUri.length > 400 * 1024`):
+   - A warning toast is shown: *"Image too large for offline storage — saved to log only."*
+   - **The imageUri is stripped** (`imageUri = null`) before the entry is saved to AsyncStorage.
+3. If under 400 KB, `saveImageToIndexedDB(entry.imageId, imageUri)` stores the blob.
+4. On `PlateDetailScreen` load, `loadImage(entry.imageId)` retrieves from IndexedDB.
+5. On delete, `deleteImageFromIndexedDB(entry.imageId)` removes the blob in parallel with AsyncStorage deletion.
+
+### Image Storage Flow (native target — iOS/Android)
+- Native paths **do not** use IndexedDB (browser-only API).
+- When `imageUri` is a `file://` path from expo-image-picker, the file is **copied into the app's Document Directory** via `FileSystemStorageStrategy.copyFile()`, and the stable document path is stored in `entry.imagePath`.
+- Load reads from the document path; delete removes the file.
+
+### Storage Strategies (`src/services/strategy/`)
+| Strategy | Use | Key methods |
+|---|---|---|
+| `FileSystemStorageStrategy` | Native (iOS/Android) | `copyFile(src)` → returns stable doc path; `loadFile(path)`; `deleteFile(path)` |
+| `IndexedDBStorageStrategy` | Web | `saveImage(id, blob)` → stores in IndexedDB; `loadImage(id)` → returns blob URI; `deleteImage(id)` |
+| `InMemoryStorageStrategy` | Dev fallback | Stores in a Map (ephemeral) |
 
 ## Design Theme (`src/theme.js`)
 Warm dark-mode palette, "late-night kitchen / ember glow":
@@ -120,7 +146,7 @@ Typography: system fonts only — `display`, `body`, `label` tokens (see `theme.
 ```js
 import React, { useCallback, useState } from 'react';
 import { View, Text, ... } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';`
+import { useFocusEffect } from '@react-navigation/native';
 import { colors, typography } from '../theme';
 // + component/service imports as needed
 ```

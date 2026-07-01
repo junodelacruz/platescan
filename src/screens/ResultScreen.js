@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  Alert,
   StyleSheet,
   SafeAreaView,
   Platform,
@@ -45,38 +46,42 @@ export default function ResultScreen({ route, navigation }) {
   };
 
   const handleSave = async () => {
-    const entryId = String(Date.now());
-    let finalImageUri = imageUri;
+    try {
+      const entryId = String(Date.now());
+      let finalImageUri = imageUri;
 
-    if (imageUri && Platform.OS !== 'web') {
-      // Native: copy image from temp URI to persistent file storage
-      try {
-        const platesDir = `${FileSystem.documentDirectory}plates/`;
-        const exists = (await FileSystem.getInfoAsync(platesDir)).exists;
-        if (!exists) {
-          await FileSystem.makeDirectoryAsync(platesDir, { intermediates: true });
+      if (imageUri && Platform.OS !== 'web') {
+        // Native: copy image from temp URI to persistent file storage
+        try {
+          const platesDir = `${FileSystem.documentDirectory}plates/`;
+          const exists = (await FileSystem.getInfoAsync(platesDir)).exists;
+          if (!exists) {
+            await FileSystem.makeDirectoryAsync(platesDir, { intermediates: true });
+          }
+          const destUri = `${platesDir}${entryId}.jpg`;
+          await FileSystem.copyAsync({ from: imageUri, to: destUri });
+          finalImageUri = destUri;
+        } catch (e) {
+          console.warn('Failed to persist image:', e);
         }
-        const destUri = `${platesDir}${entryId}.jpg`;
-        await FileSystem.copyAsync({ from: imageUri, to: destUri });
-        finalImageUri = destUri;
-      } catch (e) {
-        console.warn('Failed to persist image:', e);
+      } else if (imageUri && Platform.OS === 'web' && imageBase64) {
+        // Web: convert base64 string to a data: URI so it survives page reload
+        finalImageUri = `data:image/jpeg;base64,${imageBase64}`;
       }
-    } else if (imageUri && Platform.OS === 'web' && imageBase64) {
-      // Web: convert base64 string to a data: URI so it survives page reload
-      finalImageUri = `data:image/jpeg;base64,${imageBase64}`;
-    }
 
-    await addFoodEntry({
-      id: entryId,
-      timestamp: Date.now(),
-      imageUri: finalImageUri,
-      label: items.map((i) => i.name).join(', ') || 'Plate',
-      items,
-      totalCalories: total,
-      mealType,
-    });
-    navigation.popToTop();
+      await addFoodEntry({
+        id: entryId,
+        timestamp: Date.now(),
+        imageUri: finalImageUri,
+        label: items.map((i) => i.name).join(', ') || 'Plate',
+        items,
+        totalCalories: total,
+        mealType,
+      });
+      navigation.popToTop();
+    } catch (error) {
+      Alert.alert('Save failed', error.message);
+    }
   };
 
   return (
@@ -92,6 +97,9 @@ export default function ResultScreen({ route, navigation }) {
               <Text style={styles.itemMeta}>
                 {item.estimatedGrams ? `${item.estimatedGrams}g · ` : ''}
                 confidence: {item.confidence || 'medium'}
+              </Text>
+              <Text style={[styles.itemMeta, { marginTop: 0, fontSize: 11 }]}>
+                P: {item.protein ?? 0}g · C: {item.carbs ?? 0}g · F: {item.fat ?? 0}g
               </Text>
             </View>
             <TextInput
@@ -109,6 +117,15 @@ export default function ResultScreen({ route, navigation }) {
         <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>Total</Text>
           <Text style={styles.totalValue}>{total} kcal</Text>
+        </View>
+
+        <View style={styles.macroTotalsRow}>
+          <Text style={styles.totalLabel}>Macros</Text>
+          <Text style={styles.macroTotalsValue}>
+            P: {items.reduce((s, i) => s + (Number(i.protein) || 0), 0)}g · C:{' '}
+            {items.reduce((s, i) => s + (Number(i.carbs) || 0), 0)}g · F:{' '}
+            {items.reduce((s, i) => s + (Number(i.fat) || 0), 0)}g
+          </Text>
         </View>
 
         {/* Meal type selector */}
@@ -178,6 +195,12 @@ const styles = StyleSheet.create({
   },
   totalLabel: { fontSize: 16, color: colors.ink, ...typography.label },
   totalValue: { fontSize: 20, color: colors.tomato, ...typography.display },
+  macroTotalsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  macroTotalsValue: { fontSize: 13, color: colors.inkMuted, ...typography.label },
   mealTypeHeading: {
     fontSize: 12,
     color: colors.inkMuted,

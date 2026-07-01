@@ -7,3 +7,4 @@ services:
       - "8085:80" # Map to whatever port you want to use on your home server
     volumes:
       - ./dist:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
