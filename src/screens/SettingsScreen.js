@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
@@ -12,25 +13,24 @@ import { getCalorieGoal, setCalorieGoal } from '../services/storageService';
 import BackButton from '../components/BackButton';
 
 export default function SettingsScreen({ navigation }) {
-  const [goal, setGoal] = useState(1900);
+  const [goalInput, setGoalInput] = useState('');
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    getCalorieGoal().then((g) => setGoal(g));
+    getCalorieGoal().then((g) => setGoalInput(g.toString()));
   }, []);
 
   const handleSave = async () => {
-    if (goal < 500 || goal > 10000) {
-      Alert.alert('Invalid', 'Please enter a value between 500 and 10000.');
+    const parsed = parseInt(goalInput, 10);
+    if (!goalInput || isNaN(parsed) || parsed < 500 || parsed > 10000) {
+      setError('Please enter a value between 500 and 10000.');
       return;
     }
-    await setCalorieGoal(goal);
+    setError('');
+    await setCalorieGoal(parsed);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
-  };
-
-  const adjust = (delta) => {
-    setGoal((prev) => Math.max(500, Math.min(10000, prev + delta)));
   };
 
   return (
@@ -45,32 +45,21 @@ export default function SettingsScreen({ navigation }) {
         <Text style={styles.label}>Daily Calorie Goal</Text>
 
         <View style={styles.calorieDisplay}>
-          <TouchableOpacity
-            onPress={() => adjust(-50)}
-            style={styles.adjustBtn}
-          >
-            <Text style={styles.adjustText}>−50</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => adjust(-10)}
-            style={[styles.adjustBtn, styles.adjustBtnSmall]}
-          >
-            <Text style={styles.adjustText}>−10</Text>
-          </TouchableOpacity>
-          <Text style={styles.goalValue}>{goal}</Text>
-          <TouchableOpacity
-            onPress={() => adjust(10)}
-            style={[styles.adjustBtn, styles.adjustBtnSmall]}
-          >
-            <Text style={styles.adjustText}>+10</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => adjust(50)}
-            style={styles.adjustBtn}
-          >
-            <Text style={styles.adjustText}>+50</Text>
-          </TouchableOpacity>
+          <TextInput
+            style={styles.goalInput}
+            keyboardType="number-pad"
+            value={goalInput}
+            onChangeText={(text) => {
+              setGoalInput(text);
+              if (error) setError('');
+            }}
+            placeholder="2000"
+          />
         </View>
+
+        {error ? (
+          <Text style={styles.errorText}>{error}</Text>
+        ) : null}
 
         <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
           <Text style={styles.saveButtonText}>
@@ -106,35 +95,25 @@ const styles = StyleSheet.create({
     ...typography.label,
   },
   calorieDisplay: {
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
+    marginBottom: 8,
   },
-  goalValue: {
+  goalInput: {
     fontSize: 56,
     color: colors.ink,
     ...typography.display,
     minWidth: 140,
     textAlign: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
-  adjustBtn: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  adjustBtnSmall: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
-  },
-  adjustText: {
-    fontSize: 15,
-    color: colors.gold,
-    fontWeight: '600',
+  errorText: {
+    fontSize: 13,
+    color: colors.tomato,
+    textAlign: 'center',
+    marginTop: 8,
+    ...typography.label,
   },
   saveButton: {
     marginTop: 40,

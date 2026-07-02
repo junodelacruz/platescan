@@ -6,12 +6,54 @@ import {
   ScrollView,
   StyleSheet,
   SafeAreaView,
+  TextInput,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getFoodLog, deleteFoodEntry } from '../services/storageService';
 import { DAILY_CALORIE_GOAL } from '../config';
 import { colors, typography } from '../theme';
 import BackButton from '../components/BackButton';
+
+function MealEntryRow({ entry, onDelete, navigation }) {
+  const proteinColor = '#4E7C62';
+  const carbsColor = '#D9A441';
+  const fatColor = '#E05D44';
+  const pVal = Math.round(entry.macros?.protein ?? entry.items?.reduce((s, i) => s + (i.protein || 0), 0) ?? 0);
+  const cVal = Math.round(entry.macros?.carbs ?? entry.items?.reduce((s, i) => s + (i.carbs || 0), 0) ?? 0);
+  const fVal = Math.round(entry.macros?.fat ?? entry.items?.reduce((s, i) => s + (i.fat || 0), 0) ?? 0);
+
+  return (
+    <View style={styles.mealRow}>
+      <View style={styles.mealTopSection}>
+        <TouchableOpacity
+          style={styles.mealRowContent}
+          activeOpacity={0.6}
+          onPress={() => navigation.navigate('PlateDetail', { entry })}
+        >
+          <View style={styles.mealTopRow}>
+            <Text style={styles.mealName}>{entry.label}</Text>
+            {entry.mealType && (
+              <View style={[styles.badge, { backgroundColor: MEAL_TYPE_COLORS[entry.mealType] ?? colors.border }]}>
+                <Text style={styles.badgeText}>{entry.mealType}</Text>
+              </View>
+            )}
+          </View>
+          <Text style={styles.mealCal}>{entry.totalCalories} kcal</Text>
+          <Text style={styles.macroSummary}>
+            <Text style={{ color: proteinColor }}>P: {pVal}g</Text>
+            {' · '}
+            <Text style={{ color: carbsColor }}>C: {cVal}g</Text>
+            {' · '}
+            <Text style={{ color: fatColor }}>F: {fVal}g</Text>
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.deleteBtn} onPress={onDelete}>
+          <Text style={styles.removeText}>Remove</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
 
 const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = [
@@ -167,30 +209,12 @@ export default function HistoryScreen({ navigation }) {
           <Text style={styles.emptyText}>No meals logged on this day.</Text>
         ) : (
           selectedEntries.map((entry) => (
-            <View key={entry.id} style={styles.mealRow}>
-              <TouchableOpacity
-                style={styles.mealRowContent}
-                activeOpacity={0.6}
-                onPress={() => navigation.navigate('PlateDetail', { entry })}
-              >
-                <View style={styles.mealTopRow}>
-                  <Text style={styles.mealName}>{entry.label}</Text>
-                  {entry.mealType && (
-                    <View style={[styles.badge, { backgroundColor: MEAL_TYPE_COLORS[entry.mealType] ?? colors.border }]}>
-                      <Text style={styles.badgeText}>{entry.mealType}</Text>
-                    </View>
-                  )}
-                </View>
-                <Text style={styles.mealCal}>{entry.totalCalories} kcal</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.mealDelete}
-                activeOpacity={0.6}
-                onPress={() => handleDelete(entry.id)}
-              >
-                <Text style={styles.removeText}>Remove</Text>
-              </TouchableOpacity>
-            </View>
+            <MealEntryRow
+              key={entry.id}
+              entry={entry}
+              onDelete={() => handleDelete(entry.id)}
+              navigation={navigation}
+            />
           ))
         )}
       </ScrollView>
@@ -308,23 +332,22 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   mealRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  mealTopSection: {
+    width: '100%',
+  },
   mealRowContent: {
     flex: 1,
   },
-  mealDelete: {
-    marginLeft: 12,
-  },
+  macroSummary: { fontSize: 12, color: colors.inkMuted, marginTop: 2 },
+  deleteBtn: { padding: 4 },
   mealTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    flexWrap: 'wrap',
   },
   mealName: {
     fontSize: 15,

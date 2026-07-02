@@ -28,21 +28,26 @@ and return ONLY valid JSON (no markdown fences, no commentary) in exactly this s
   "notes": "string, one short sentence about estimate uncertainty"
 }`;
 
-export async function analyzeFoodImage(base64Image) {
+export async function analyzeFoodImage(base64Image, description = '') {
   switch (AI_CONFIG.provider) {
     case 'odysseus':
     case 'openai-compatible':
-      return callOpenAICompatible(base64Image);
+      return callOpenAICompatible(base64Image, description);
     case 'anthropic':
-      return callAnthropic(base64Image);
+      return callAnthropic(base64Image, description);
     case 'gemini':
-      return callGemini(base64Image);
+      return callGemini(base64Image, description);
     default:
       throw new Error(`Unknown AI provider: ${AI_CONFIG.provider}`);
   }
 }
 
-async function callOpenAICompatible(base64Image) {
+async function callOpenAICompatible(base64Image, description = '') {
+  const userText = [
+    { type: 'text', text: 'Identify the food on this plate and estimate calories.' },
+    ...(description ? [{ type: 'text', text: `Additional context from the user: ${description}` }] : []),
+    { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64Image}` } },
+  ];
   const res = await fetch(`${AI_CONFIG.baseUrl}/chat/completions`, {
     method: 'POST',
     headers: {
@@ -53,15 +58,9 @@ async function callOpenAICompatible(base64Image) {
       model: AI_CONFIG.model,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: 'Identify the food on this plate and estimate calories.' },
-            { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64Image}` } },
-          ],
-        },
+        { role: 'user', content: userText },
       ],
-      max_tokens: 2000,
+      max_tokens: 4000,
     }),
   });
 
@@ -73,7 +72,14 @@ async function callOpenAICompatible(base64Image) {
   return parseModelJson(text);
 }
 
-async function callAnthropic(base64Image) {
+async function callAnthropic(base64Image, description = '') {
+  const contentParts = [
+    { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64Image } },
+    { type: 'text', text: 'Identify the food on this plate and estimate calories.' },
+  ];
+  if (description) {
+    contentParts.push({ type: 'text', text: `Additional context from the user: ${description}` });
+  }
   const res = await fetch(`${AI_CONFIG.baseUrl}/v1/messages`, {
     method: 'POST',
     headers: {
@@ -83,15 +89,12 @@ async function callAnthropic(base64Image) {
     },
     body: JSON.stringify({
       model: AI_CONFIG.model,
-      max_tokens: 2000,
+      max_tokens: 4000,
       system: SYSTEM_PROMPT,
       messages: [
         {
           role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64Image } },
-            { type: 'text', text: 'Identify the food on this plate and estimate calories.' },
-          ],
+          content: contentParts,
         },
       ],
     }),
@@ -107,8 +110,14 @@ async function callAnthropic(base64Image) {
 
 const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-3.1-flash-lite', 'gemini-3.5-flash'];
 
-async function callGemini(base64Image) {
+async function callGemini(base64Image, description = '') {
   let lastError = null;
+
+  const parts = [
+    { text: 'Identify the food on this plate and estimate calories.' },
+    ...(description ? [{ text: `Additional context from the user: ${description}` }] : []),
+    { inline_data: { mime_type: 'image/jpeg', data: base64Image } },
+  ];
 
   // Try models in order of preferred stability
   const modelsToTry = [AI_CONFIG.model, ...GEMINI_MODELS.filter((m) => m !== AI_CONFIG.model)];
@@ -124,14 +133,11 @@ async function callGemini(base64Image) {
           systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
           contents: [
             {
-              parts: [
-                { text: 'Identify the food on this plate and estimate calories.' },
-                { inline_data: { mime_type: 'image/jpeg', data: base64Image } },
-              ],
+              parts: parts,
             },
           ],
           generationConfig: {
-            maxOutputTokens: 2000,
+            maxOutputTokens: 4000,
             responseMimeType: 'application/json',
             responseSchema: {
               type: 'OBJECT',

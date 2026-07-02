@@ -1,19 +1,18 @@
 # PlateScan — Active Context
 
-## What was just being worked on
-Fixed silent failure bug in ResultScreen handleSave and storageService addFoodEntry. Three fixes applied:
-1. handleSave now wrapped in outer try/catch with Alert.alert on failure
-2. addFoodEntry wrapped in try/catch with size check (>400KB strips imageUri) and re-throws
-3. aiService.js max_tokens raised from 800 to 2000 on all 3 provider call sites
+## Current state
 
-## Immediate next step
-No immediate next steps. All three fixes confirmed applied.
+Scan-to-AI flow enhanced with optional pre-scan description input. Users can now type a description (e.g. "Chipotle bowl, chicken, rice, guac") before scanning. The description is appended to the AI prompt for additional food context and saved to the plate entry. PlateDetailScreen displays the saved description below the macros row.
 
-## Resolved decisions from this session
-- Silent save failures will now surface via Alert.alert('Save failed', error.message)
-- Large entries (>400KB) have images stripped before save as last-resort safeguard
-- AI max_tokens increased to 2000 to support many-item plate scans
+## Last changes
 
-## Things to double-check if resuming cold
-- Verify the Alert text matches the grep string: 'Save failed'
-- Confirm no QuotaExceededError in production logs
+- `src/screens/ScanScreen.js`: Replaced immediate AI call with a description input UI after photo capture. Shows a multiline TextInput (placeholder: "Add context (optional) — e.g. Chipotle bowl, chicken, rice, guac"), a "Scan" button (sends with description), and a "Skip" button (sends without). Photo preview is shown.
+- `src/services/aiService.js`: `analyzeFoodImage` now accepts an optional `description` parameter. When non-empty, appends `Additional context from the user: <description>` to the user message.
+- `src/screens/ResultScreen.js`: Passes `description` from route params to `addFoodEntry` as the `description` field in the saved entry.
+- `src/services/storageService.js`: No changes needed — the entry shape already supports flexible fields; `description` is saved as a standard entry property.
+- `src/screens/PlateDetailScreen.js`: Displays saved `entry.description` below the macros row with a "Note:" label. Renders nothing if empty.
+
+## Next steps
+
+- Test the full flow: photo → description input → scan → AI result → save → plate detail
+- Verify description is persisted and displayed correctly across sessions

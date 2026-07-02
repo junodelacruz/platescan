@@ -1,5 +1,5 @@
 import 'react-native-gesture-handler';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
@@ -10,10 +10,15 @@ import HistoryScreen from './src/screens/HistoryScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import PlateDetailScreen from './src/screens/PlateDetailScreen';
 import { colors } from './src/theme';
+import { clearLegacyData } from './src/services/storageService';
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
+  useEffect(() => {
+    clearLegacyData();
+  }, []);
+
   return (
     <NavigationContainer>
       <StatusBar style="light" />

@@ -1,0 +1,8 @@
+{
+  "name": "PlateScan",
+  "short_name": "PlateScan",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#000000",
+  "theme_color": "#000000"
+}

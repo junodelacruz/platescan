@@ -33,7 +33,7 @@ function getDefaultMealType() {
 }
 
 export default function ResultScreen({ route, navigation }) {
-  const { analysis, imageUri, imageBase64 } = route.params;
+  const { analysis, imageUri, imageBase64, description } = route.params;
   const [items, setItems] = useState(analysis.items || []);
   const [mealType, setMealType] = useState(getDefaultMealType());
 
@@ -64,9 +64,26 @@ export default function ResultScreen({ route, navigation }) {
         } catch (e) {
           console.warn('Failed to persist image:', e);
         }
-      } else if (imageUri && Platform.OS === 'web' && imageBase64) {
-        // Web: convert base64 string to a data: URI so it survives page reload
-        finalImageUri = `data:image/jpeg;base64,${imageBase64}`;
+      } else if (imageUri && Platform.OS === 'web') {
+        if (imageBase64) {
+          // Fast path: base64 already available as route param
+          finalImageUri = `data:image/jpeg;base64,${imageBase64}`;
+        } else {
+          // Fallback: fetch the blob: URL and convert to base64 data URI
+          try {
+            const response = await fetch(imageUri);
+            const blob = await response.blob();
+            finalImageUri = await new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+          } catch (e) {
+            console.warn('Failed to convert blob to base64:', e);
+            finalImageUri = null; // save entry without image rather than with a dead blob URL
+          }
+        }
       }
 
       await addFoodEntry({
@@ -77,10 +94,16 @@ export default function ResultScreen({ route, navigation }) {
         items,
         totalCalories: total,
         mealType,
+        description: description || '',
       });
       navigation.popToTop();
     } catch (error) {
-      Alert.alert('Save failed', error.message);
+      console.error('handleSave error:', error);
+      if (Platform.OS === 'web') {
+        window.alert('Save failed: ' + error.message);
+      } else {
+        Alert.alert('Save failed', error.message);
+      }
     }
   };
 
@@ -99,7 +122,7 @@ export default function ResultScreen({ route, navigation }) {
                 confidence: {item.confidence || 'medium'}
               </Text>
               <Text style={[styles.itemMeta, { marginTop: 0, fontSize: 11 }]}>
-                P: {item.protein ?? 0}g · C: {item.carbs ?? 0}g · F: {item.fat ?? 0}g
+                P: {Math.round(item.protein ?? 0)}g · C: {Math.round(item.carbs ?? 0)}g · F: {Math.round(item.fat ?? 0)}g
               </Text>
             </View>
             <TextInput
@@ -122,9 +145,9 @@ export default function ResultScreen({ route, navigation }) {
         <View style={styles.macroTotalsRow}>
           <Text style={styles.totalLabel}>Macros</Text>
           <Text style={styles.macroTotalsValue}>
-            P: {items.reduce((s, i) => s + (Number(i.protein) || 0), 0)}g · C:{' '}
-            {items.reduce((s, i) => s + (Number(i.carbs) || 0), 0)}g · F:{' '}
-            {items.reduce((s, i) => s + (Number(i.fat) || 0), 0)}g
+            P: {Math.round(items.reduce((s, i) => s + (Number(i.protein) || 0), 0))}g · C:{' '}
+            {Math.round(items.reduce((s, i) => s + (Number(i.carbs) || 0), 0))}g · F:{' '}
+            {Math.round(items.reduce((s, i) => s + (Number(i.fat) || 0), 0))}g
           </Text>
         </View>
 

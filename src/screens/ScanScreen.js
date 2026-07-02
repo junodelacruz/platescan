@@ -9,15 +9,19 @@ import {
   Alert,
   SafeAreaView,
   StatusBar,
+  TextInput,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { analyzeFoodImage } from '../services/aiService';
+import { addFoodEntry } from '../services/storageService';
 import { colors, typography } from '../theme';
 import BackButton from '../components/BackButton';
 
 export default function ScanScreen({ navigation }) {
   const [imageUri, setImageUri] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [description, setDescription] = useState('');
+  const [showDescriptionInput, setShowDescriptionInput] = useState(false);
 
   const takePhoto = async () => {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
@@ -42,24 +46,46 @@ export default function ScanScreen({ navigation }) {
     if (!result.canceled) handleImage(result.assets[0]);
   };
 
-  const handleImage = async (asset) => {
+  // Store base64 alongside URI for the scan call
+  const [imageBase64, setImageBase64] = useState(null);
+
+  const handleImage = (asset) => {
     setImageUri(asset.uri);
+    setImageBase64(asset.base64 || null);
+    setDescription('');
+    setShowDescriptionInput(true);
+  };
+
+  const triggerScan = async () => {
+    if (!imageBase64) {
+      Alert.alert('Missing image', 'No image data available for scanning.');
+      return;
+    }
+    setShowDescriptionInput(false);
     setLoading(true);
     try {
-      const analysis = await analyzeFoodImage(asset.base64);
-      navigation.replace('Result', { analysis, imageUri: asset.uri, imageBase64: asset.base64 });
+      const analysis = await analyzeFoodImage(imageBase64, description);
+      navigation.replace('Result', { analysis, imageUri, imageBase64 });
     } catch (err) {
       Alert.alert('Scan failed', err.message || 'Could not analyze this photo. Try again.');
+      setShowDescriptionInput(true);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleScan = () => {
+    triggerScan();
+  };
+
+  const handleSkip = () => {
+    triggerScan();
+  };
+
   return (
     <SafeAreaView style={styles.safe}>
-      {/* Inner container enforces horizontal margins and clips overflow */}
       <View style={styles.inner}>
-        <StatusBar barStyle="light-content" />
+        <StatusBar barTitle="light-content" />
         <BackButton onPress={() => navigation.goBack()} />
         <Text style={styles.title}>Scan Your Plate</Text>
         <Text style={styles.subtitle}>Center the plate in frame — good lighting helps accuracy.</Text>
@@ -78,12 +104,38 @@ export default function ScanScreen({ navigation }) {
           )}
         </View>
 
-        <TouchableOpacity style={styles.primaryButton} onPress={takePhoto} disabled={loading}>
-          <Text style={styles.primaryButtonText}>Take Photo</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.secondaryButton} onPress={pickFromLibrary} disabled={loading}>
-          <Text style={styles.secondaryButtonText}>Choose from Library</Text>
-        </TouchableOpacity>
+        {!imageUri && (
+          <>
+            <TouchableOpacity style={styles.primaryButton} onPress={takePhoto} disabled={loading}>
+              <Text style={styles.primaryButtonText}>Take Photo</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.secondaryButton} onPress={pickFromLibrary} disabled={loading}>
+              <Text style={styles.secondaryButtonText}>Choose from Library</Text>
+            </TouchableOpacity>
+          </>
+        )}
+
+        {showDescriptionInput && imageUri && (
+          <View style={styles.descriptionPanel}>
+            <TextInput
+              style={styles.descriptionInput}
+              placeholder="Add context (optional) — e.g. Chipotle bowl, chicken, rice, guac"
+              placeholderTextColor={colors.inkMuted}
+              value={description}
+              onChangeText={setDescription}
+              multiline
+              numberOfLines={4}
+            />
+            <View style={styles.descriptionButtons}>
+              <TouchableOpacity style={styles.scanButton} onPress={handleScan} disabled={loading}>
+                <Text style={styles.scanButtonText}>Scan</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.skipButton} onPress={handleSkip} disabled={loading}>
+                <Text style={styles.skipButtonText}>Skip</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -142,4 +194,52 @@ const styles = StyleSheet.create({
     borderColor: colors.forest,
   },
   secondaryButtonText: { color: colors.forest, fontSize: 16, ...typography.label },
+  descriptionPanel: {
+    marginTop: 20,
+    padding: 16,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  descriptionInput: {
+    fontSize: 14,
+    color: colors.ink,
+    minHeight: 80,
+    textAlignVertical: 'top',
+    padding: 8,
+    marginBottom: 12,
+  },
+  descriptionButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  scanButton: {
+    flex: 1,
+    backgroundColor: colors.tomato,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  scanButtonText: {
+    color: colors.background,
+    fontSize: 16,
+    fontWeight: '700',
+    ...typography.label,
+  },
+  skipButton: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  skipButtonText: {
+    color: colors.inkMuted,
+    fontSize: 16,
+    fontWeight: '700',
+    ...typography.label,
+  },
 });
