@@ -9,19 +9,17 @@ import ResultScreen from './src/screens/ResultScreen';
 import HistoryScreen from './src/screens/HistoryScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import PlateDetailScreen from './src/screens/PlateDetailScreen';
-import { colors } from './src/theme';
 import { clearLegacyData } from './src/services/storageService';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 
 const Stack = createNativeStackNavigator();
 
-export default function App() {
-  useEffect(() => {
-    clearLegacyData();
-  }, []);
+function AppNavigator() {
+  const { colors, isDark } = useTheme();
 
   return (
     <NavigationContainer>
-      <StatusBar style="light" />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <Stack.Navigator
         screenOptions={{
           headerShown: false,
@@ -36,5 +34,17 @@ export default function App() {
         <Stack.Screen name="PlateDetail" component={PlateDetailScreen} />
       </Stack.Navigator>
     </NavigationContainer>
+  );
+}
+
+export default function App() {
+  useEffect(() => {
+    clearLegacyData();
+  }, []);
+
+  return (
+    <ThemeProvider>
+      <AppNavigator />
+    </ThemeProvider>
   );
 }

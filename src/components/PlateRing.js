@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { colors, typography } from '../theme';
+import { useTheme } from '../context/ThemeContext';
 
 // Signature element: a ring that fills up like a plate being filled
 // with food over the course of the day.
@@ -11,9 +11,17 @@ const RADIUS = (SIZE - STROKE) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 export default function PlateRing({ consumed, goal }) {
+  const { colors, typography } = useTheme();
   const pct = goal > 0 ? Math.min(consumed / goal, 1) : 0;
   const dashOffset = CIRCUMFERENCE * (1 - pct);
   const over = consumed > goal;
+
+  const styles = {
+    wrap: { width: SIZE, height: SIZE, alignItems: 'center', justifyContent: 'center' },
+    center: { position: 'absolute', alignItems: 'center' },
+    calories: { fontSize: 42, color: colors.ink, ...typography.display },
+    goalLabel: { fontSize: 13, color: colors.inkMuted, ...typography.label, marginTop: 4 },
+  };
 
   return (
     <View style={styles.wrap}>
@@ -47,10 +55,3 @@ export default function PlateRing({ consumed, goal }) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrap: { width: SIZE, height: SIZE, alignItems: 'center', justifyContent: 'center' },
-  center: { position: 'absolute', alignItems: 'center' },
-  calories: { fontSize: 42, color: colors.ink, ...typography.display },
-  goalLabel: { fontSize: 13, color: colors.inkMuted, ...typography.label, marginTop: 4 },
-});

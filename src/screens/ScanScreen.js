@@ -14,10 +14,11 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { analyzeFoodImage } from '../services/aiService';
 import { addFoodEntry } from '../services/storageService';
-import { colors, typography } from '../theme';
+import { useTheme } from '../context/ThemeContext';
 import BackButton from '../components/BackButton';
 
 export default function ScanScreen({ navigation }) {
+  const { colors, typography } = useTheme();
   const [imageUri, setImageUri] = useState(null);
   const [loading, setLoading] = useState(false);
   const [description, setDescription] = useState('');
@@ -82,6 +83,109 @@ export default function ScanScreen({ navigation }) {
     triggerScan();
   };
 
+  const styles = {
+    safe: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    inner: {
+      flex: 1,
+      paddingHorizontal: 28,
+      paddingBottom: 36,
+      overflow: 'hidden',
+    },
+    title: { fontSize: 24, color: colors.ink, ...typography.display, marginTop: 10 },
+    subtitle: { fontSize: 14, color: colors.inkMuted, marginTop: 8, marginBottom: 24 },
+    preview: {
+      flex: 1,
+      backgroundColor: colors.surface,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    image: { width: '100%', height: '100%' },
+    placeholder: { color: colors.inkMuted },
+    loadingOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(28, 24, 20, 0.75)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    loadingText: { color: colors.ink, marginTop: 10, ...typography.label },
+    primaryButton: {
+      backgroundColor: colors.tomato,
+      borderRadius: 16,
+      paddingVertical: 18,
+      alignItems: 'center',
+      marginTop: 20,
+    },
+    primaryButtonText: { color: colors.ink, fontSize: 16, ...typography.label },
+    secondaryButton: {
+      borderRadius: 16,
+      paddingVertical: 18,
+      alignItems: 'center',
+      marginTop: 12,
+      borderWidth: 1,
+      borderColor: colors.forest,
+    },
+    secondaryButtonText: { color: colors.forest, fontSize: 16, ...typography.label },
+    descriptionPanel: {
+      marginTop: 20,
+      padding: 16,
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    descriptionInput: {
+      fontSize: 14,
+      color: colors.ink,
+      minHeight: 80,
+      textAlignVertical: 'top',
+      padding: 8,
+      marginBottom: 12,
+    },
+    descriptionButtons: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    scanButton: {
+      flex: 1,
+      backgroundColor: colors.tomato,
+      borderRadius: 12,
+      paddingVertical: 14,
+      alignItems: 'center',
+    },
+    scanButtonText: {
+      color: colors.background,
+      fontSize: 16,
+      fontWeight: '700',
+      ...typography.label,
+    },
+    skipButton: {
+      flex: 1,
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      paddingVertical: 14,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    skipButtonText: {
+      color: colors.inkMuted,
+      fontSize: 16,
+      fontWeight: '700',
+      ...typography.label,
+    },
+  };
+
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.inner}>
@@ -140,106 +244,3 @@ export default function ScanScreen({ navigation }) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  inner: {
-    flex: 1,
-    paddingHorizontal: 28,
-    paddingBottom: 36,
-    overflow: 'hidden',
-  },
-  title: { fontSize: 24, color: colors.ink, ...typography.display, marginTop: 10 },
-  subtitle: { fontSize: 14, color: colors.inkMuted, marginTop: 8, marginBottom: 24 },
-  preview: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  image: { width: '100%', height: '100%' },
-  placeholder: { color: colors.inkMuted },
-  loadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(28, 24, 20, 0.75)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingText: { color: colors.ink, marginTop: 10, ...typography.label },
-  primaryButton: {
-    backgroundColor: colors.tomato,
-    borderRadius: 16,
-    paddingVertical: 18,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  primaryButtonText: { color: colors.ink, fontSize: 16, ...typography.label },
-  secondaryButton: {
-    borderRadius: 16,
-    paddingVertical: 18,
-    alignItems: 'center',
-    marginTop: 12,
-    borderWidth: 1,
-    borderColor: colors.forest,
-  },
-  secondaryButtonText: { color: colors.forest, fontSize: 16, ...typography.label },
-  descriptionPanel: {
-    marginTop: 20,
-    padding: 16,
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  descriptionInput: {
-    fontSize: 14,
-    color: colors.ink,
-    minHeight: 80,
-    textAlignVertical: 'top',
-    padding: 8,
-    marginBottom: 12,
-  },
-  descriptionButtons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  scanButton: {
-    flex: 1,
-    backgroundColor: colors.tomato,
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  scanButtonText: {
-    color: colors.background,
-    fontSize: 16,
-    fontWeight: '700',
-    ...typography.label,
-  },
-  skipButton: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  skipButtonText: {
-    color: colors.inkMuted,
-    fontSize: 16,
-    fontWeight: '700',
-    ...typography.label,
-  },
-});

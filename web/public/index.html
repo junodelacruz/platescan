@@ -15,7 +15,7 @@
       html,
       body {
         height: 100%;
-        background-color: #1C1814;
+        background-color: #1C1814; /* dark theme default — JS will override on load */
       }
       /* These styles disable body scrolling if you are using <ScrollView> */
       body {
@@ -26,12 +26,18 @@
         display: flex;
         height: 100%;
         flex: 1;
+        background-color: inherit;
+      }
+      #root > div {
+        flex: 1;
+        display: flex;
+        background-color: inherit;
       }
       /* Override React Native / Expo web chrome */
       .rn-status-bar,
       [data-testid="statusBar"],
       [class*="statusBar"] {
-        background-color: #1C1814 !important;
+        background-color: transparent !important;
         display: none;
       }
     </style>

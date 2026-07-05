@@ -4,56 +4,12 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  StyleSheet,
   SafeAreaView,
-  TextInput,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getFoodLog, deleteFoodEntry } from '../services/storageService';
-import { DAILY_CALORIE_GOAL } from '../config';
-import { colors, typography } from '../theme';
+import { getFoodLog } from '../services/storageService';
+import { useTheme } from '../context/ThemeContext';
 import BackButton from '../components/BackButton';
-
-function MealEntryRow({ entry, onDelete, navigation }) {
-  const proteinColor = '#4E7C62';
-  const carbsColor = '#D9A441';
-  const fatColor = '#E05D44';
-  const pVal = Math.round(entry.macros?.protein ?? entry.items?.reduce((s, i) => s + (i.protein || 0), 0) ?? 0);
-  const cVal = Math.round(entry.macros?.carbs ?? entry.items?.reduce((s, i) => s + (i.carbs || 0), 0) ?? 0);
-  const fVal = Math.round(entry.macros?.fat ?? entry.items?.reduce((s, i) => s + (i.fat || 0), 0) ?? 0);
-
-  return (
-    <View style={styles.mealRow}>
-      <View style={styles.mealTopSection}>
-        <TouchableOpacity
-          style={styles.mealRowContent}
-          activeOpacity={0.6}
-          onPress={() => navigation.navigate('PlateDetail', { entry })}
-        >
-          <View style={styles.mealTopRow}>
-            <Text style={styles.mealName}>{entry.label}</Text>
-            {entry.mealType && (
-              <View style={[styles.badge, { backgroundColor: MEAL_TYPE_COLORS[entry.mealType] ?? colors.border }]}>
-                <Text style={styles.badgeText}>{entry.mealType}</Text>
-              </View>
-            )}
-          </View>
-          <Text style={styles.mealCal}>{entry.totalCalories} kcal</Text>
-          <Text style={styles.macroSummary}>
-            <Text style={{ color: proteinColor }}>P: {pVal}g</Text>
-            {' · '}
-            <Text style={{ color: carbsColor }}>C: {cVal}g</Text>
-            {' · '}
-            <Text style={{ color: fatColor }}>F: {fVal}g</Text>
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.deleteBtn} onPress={onDelete}>
-          <Text style={styles.removeText}>Remove</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
 
 const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = [
@@ -68,7 +24,6 @@ const MEAL_TYPE_COLORS = {
   Snack: '#7A6EA0',
 };
 
-// Returns a "YYYY-MM-DD" key for any date
 function dateKey(date) {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -76,12 +31,123 @@ function dateKey(date) {
   return `${y}-${m}-${d}`;
 }
 
+function MealEntryRow({ entry, navigation, colors, typography }) {
+  const proteinColor = '#4E7C62';
+  const carbsColor = '#D9A441';
+  const fatColor = '#E05D44';
+  const pVal = Math.round(entry.macros?.protein ?? entry.items?.reduce((s, i) => s + (i.protein || 0), 0) ?? 0);
+  const cVal = Math.round(entry.macros?.carbs ?? entry.items?.reduce((s, i) => s + (i.carbs || 0), 0) ?? 0);
+  const fVal = Math.round(entry.macros?.fat ?? entry.items?.reduce((s, i) => s + (i.fat || 0), 0) ?? 0);
+
+  return (
+    <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+      <TouchableOpacity
+        activeOpacity={0.6}
+        onPress={() => navigation.navigate('PlateDetail', { entry })}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Text style={{ fontSize: 15, color: colors.ink, fontWeight: '600', flexShrink: 1 }}>
+            {entry.label}
+          </Text>
+          {entry.mealType && (
+            <View style={{
+              borderRadius: 20,
+              paddingHorizontal: 8,
+              paddingVertical: 2,
+              backgroundColor: MEAL_TYPE_COLORS[entry.mealType] ?? colors.border,
+            }}>
+              <Text style={{
+                fontSize: 10,
+                fontWeight: '700',
+                color: colors.background,
+                textTransform: 'uppercase',
+                letterSpacing: 0.5,
+              }}>
+                {entry.mealType}
+              </Text>
+            </View>
+          )}
+        </View>
+        <Text style={{ fontSize: 13, color: colors.inkMuted, marginTop: 3 }}>
+          {entry.totalCalories} kcal
+        </Text>
+        <Text style={{ fontSize: 12, color: colors.inkMuted, marginTop: 2 }}>
+          <Text style={{ color: proteinColor }}>P: {pVal}g</Text>
+          {' · '}
+          <Text style={{ color: carbsColor }}>C: {cVal}g</Text>
+          {' · '}
+          <Text style={{ color: fatColor }}>F: {fVal}g</Text>
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+const DAILY_CALORIE_GOAL = 2000;
+
 export default function HistoryScreen({ navigation }) {
+  const { colors, typography, isDark } = useTheme();
   const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
-  const [viewMonth, setViewMonth] = useState(today.getMonth()); // 0-indexed
+  const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [selectedKey, setSelectedKey] = useState(dateKey(today));
   const [entriesByDay, setEntriesByDay] = useState({});
+
+  const styles = {
+    safe: { flex: 1, backgroundColor: colors.background },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 24,
+      paddingTop: 12,
+      paddingBottom: 8,
+    },
+    screenTitle: { fontSize: 24, color: colors.ink, ...typography.display },
+    monthNav: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 24,
+      marginBottom: 10,
+    },
+    navBtn: { padding: 8 },
+    navArrow: { fontSize: 28, color: colors.ink, lineHeight: 30 },
+    monthLabel: { fontSize: 17, color: colors.ink, ...typography.display },
+    dowRow: { flexDirection: 'row', paddingHorizontal: 12, marginBottom: 4 },
+    dowLabel: {
+      flex: 1,
+      textAlign: 'center',
+      fontSize: 11,
+      color: colors.inkMuted,
+      ...typography.label,
+    },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12 },
+    cell: {
+      width: '14.2857%',
+      aspectRatio: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 50,
+      marginVertical: 2,
+    },
+    cellSelected: { backgroundColor: colors.tomato },
+    cellToday: { borderWidth: 1.5, borderColor: colors.forest },
+    dayText: { fontSize: 14, color: colors.ink, fontWeight: '500' },
+    dayTextSelected: { color: colors.background, fontWeight: '700' },
+    dot: { width: 5, height: 5, borderRadius: 3, marginTop: 2 },
+    detail: { flex: 1, marginTop: 10, borderTopWidth: 1, borderTopColor: colors.border },
+    detailContent: { padding: 20, paddingBottom: 40 },
+    detailHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'baseline',
+      marginBottom: 14,
+    },
+    detailDate: { fontSize: 15, color: colors.ink, fontWeight: '600', flexShrink: 1 },
+    detailTotal: { fontSize: 14, fontWeight: '700', marginLeft: 8 },
+    emptyText: { color: colors.inkMuted, fontSize: 14, textAlign: 'center', marginTop: 20 },
+  };
 
   const refresh = useCallback(async () => {
     const log = await getFoodLog();
@@ -94,18 +160,8 @@ export default function HistoryScreen({ navigation }) {
     setEntriesByDay(map);
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      refresh();
-    }, [refresh])
-  );
+  useFocusEffect(useCallback(() => { refresh(); }, [refresh]));
 
-  const handleDelete = async (id) => {
-    await deleteFoodEntry(id);
-    refresh();
-  };
-
-  // Navigate months
   const prevMonth = () => {
     if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
     else setViewMonth(m => m - 1);
@@ -115,10 +171,9 @@ export default function HistoryScreen({ navigation }) {
     else setViewMonth(m => m + 1);
   };
 
-  // Build day cells for the grid
-  const firstDay = new Date(viewYear, viewMonth, 1).getDay(); // 0=Sun
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-  const cells = []; // null = blank padding cell
+  const cells = [];
   for (let i = 0; i < firstDay; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
@@ -140,7 +195,6 @@ export default function HistoryScreen({ navigation }) {
         <BackButton onPress={() => navigation.goBack()} />
       </View>
 
-      {/* Month navigation */}
       <View style={styles.monthNav}>
         <TouchableOpacity onPress={prevMonth} style={styles.navBtn}>
           <Text style={styles.navArrow}>‹</Text>
@@ -151,21 +205,19 @@ export default function HistoryScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* Day-of-week header */}
       <View style={styles.dowRow}>
         {DAYS_OF_WEEK.map((d) => (
           <Text key={d} style={styles.dowLabel}>{d}</Text>
         ))}
       </View>
 
-      {/* Calendar grid */}
       <View style={styles.grid}>
         {cells.map((day, idx) => {
           if (!day) return <View key={`blank-${idx}`} style={styles.cell} />;
           const key = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          const entries = entriesByDay[key] || [];
-          const hasEntries = entries.length > 0;
-          const dayTotal = entries.reduce((s, e) => s + (e.totalCalories || 0), 0);
+          const dayEntries = entriesByDay[key] || [];
+          const hasEntries = dayEntries.length > 0;
+          const dayTotal = dayEntries.reduce((s, e) => s + (e.totalCalories || 0), 0);
           const isOver = dayTotal > DAILY_CALORIE_GOAL;
           const isSelected = key === selectedKey;
           const isToday = key === dateKey(today);
@@ -191,7 +243,6 @@ export default function HistoryScreen({ navigation }) {
         })}
       </View>
 
-      {/* Selected day detail */}
       <ScrollView style={styles.detail} contentContainerStyle={styles.detailContent}>
         <View style={styles.detailHeader}>
           <Text style={styles.detailDate}>{selectedLabel}</Text>
@@ -212,8 +263,9 @@ export default function HistoryScreen({ navigation }) {
             <MealEntryRow
               key={entry.id}
               entry={entry}
-              onDelete={() => handleDelete(entry.id)}
               navigation={navigation}
+              colors={colors}
+              typography={typography}
             />
           ))
         )}
@@ -221,161 +273,3 @@ export default function HistoryScreen({ navigation }) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 12,
-    paddingBottom: 8,
-  },
-  screenTitle: { fontSize: 24, color: colors.ink, ...typography.display },
-
-  // Month nav
-  monthNav: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    marginBottom: 10,
-  },
-  navBtn: { padding: 8 },
-  navArrow: { fontSize: 28, color: colors.ink, lineHeight: 30 },
-  monthLabel: { fontSize: 17, color: colors.ink, ...typography.display },
-
-  // Day-of-week header
-  dowRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 12,
-    marginBottom: 4,
-  },
-  dowLabel: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 11,
-    color: colors.inkMuted,
-    ...typography.label,
-  },
-
-  // Grid
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 12,
-  },
-  cell: {
-    width: '14.2857%',
-    aspectRatio: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 50,
-    marginVertical: 2,
-  },
-  cellSelected: {
-    backgroundColor: colors.tomato,
-  },
-  cellToday: {
-    borderWidth: 1.5,
-    borderColor: colors.forest,
-  },
-  dayText: {
-    fontSize: 14,
-    color: colors.ink,
-    fontWeight: '500',
-  },
-  dayTextSelected: {
-    color: colors.background,
-    fontWeight: '700',
-  },
-  dot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    marginTop: 2,
-  },
-
-  // Selected day detail
-  detail: {
-    flex: 1,
-    marginTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  detailContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  detailHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-    marginBottom: 14,
-  },
-  detailDate: {
-    fontSize: 15,
-    color: colors.ink,
-    fontWeight: '600',
-    flexShrink: 1,
-  },
-  detailTotal: {
-    fontSize: 14,
-    fontWeight: '700',
-    marginLeft: 8,
-  },
-  emptyText: {
-    color: colors.inkMuted,
-    fontSize: 14,
-    textAlign: 'center',
-    marginTop: 20,
-  },
-  mealRow: {
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  mealTopSection: {
-    width: '100%',
-  },
-  mealRowContent: {
-    flex: 1,
-  },
-  macroSummary: { fontSize: 12, color: colors.inkMuted, marginTop: 2 },
-  deleteBtn: { padding: 4 },
-  mealTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  mealName: {
-    fontSize: 15,
-    color: colors.ink,
-    fontWeight: '600',
-    flexShrink: 1,
-  },
-  mealCal: {
-    fontSize: 13,
-    color: colors.inkMuted,
-    marginTop: 3,
-  },
-  badge: {
-    borderRadius: 20,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  badgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.background,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  removeText: {
-    color: colors.tomato,
-    fontSize: 13,
-    ...typography.label,
-    marginLeft: 12,
-  },
-});

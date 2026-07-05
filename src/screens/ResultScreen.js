@@ -13,28 +13,30 @@ import {
 } from 'react-native';
 import FileSystem from 'expo-file-system';
 import { addFoodEntry } from '../services/storageService';
-import { colors, typography } from '../theme';
-
-const MEAL_TYPES = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
-
-const MEAL_TYPE_COLORS = {
-  Breakfast: '#D9A441', // gold — morning warmth
-  Lunch: '#4E7C62', // forest — midday
-  Dinner: '#E05D44', // tomato — evening
-  Snack: '#7A6EA0', // soft purple — in-between
-};
-
-function getDefaultMealType() {
-  const hour = new Date().getHours();
-  if (hour >= 5 && hour < 11) return 'Breakfast';
-  if (hour >= 11 && hour < 15) return 'Lunch';
-  if (hour >= 15 && hour < 21) return 'Dinner';
-  return 'Snack';
-}
+import { useTheme } from '../context/ThemeContext';
 
 export default function ResultScreen({ route, navigation }) {
+  const { colors, typography, isDark } = useTheme();
   const { analysis, imageUri, imageBase64, description } = route.params;
   const [items, setItems] = useState(analysis.items || []);
+
+  const MEAL_TYPES = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
+
+  const MEAL_TYPE_COLORS = {
+    Breakfast: isDark ? '#D9A441' : '#B8860B',
+    Lunch: isDark ? '#4E7C62' : '#3D6B52',
+    Dinner: isDark ? '#E05D44' : '#C0392B',
+    Snack: '#7A6EA0',
+  };
+
+  function getDefaultMealType() {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 11) return 'Breakfast';
+    if (hour >= 11 && hour < 15) return 'Lunch';
+    if (hour >= 15 && hour < 21) return 'Dinner';
+    return 'Snack';
+  }
+
   const [mealType, setMealType] = useState(getDefaultMealType());
 
   const total = items.reduce((sum, i) => sum + (Number(i.calories) || 0), 0);
@@ -107,6 +109,83 @@ export default function ResultScreen({ route, navigation }) {
     }
   };
 
+  const styles = {
+    safe: { flex: 1 },
+    content: { padding: 24, paddingBottom: 40 },
+    title: { fontSize: 22, marginBottom: 16, color: colors.ink },
+    image: { width: '100%', height: 200, borderRadius: 16, marginBottom: 20 },
+    itemRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    itemName: { fontSize: 16, fontWeight: '600', color: colors.ink },
+    itemMeta: { fontSize: 12, marginTop: 2, textTransform: 'capitalize', color: colors.inkMuted },
+    calInput: {
+      borderWidth: 1,
+      borderRadius: 8,
+      width: 64,
+      textAlign: 'center',
+      paddingVertical: 6,
+      color: colors.ink,
+      backgroundColor: colors.surface,
+    },
+    kcalLabel: { fontSize: 12, marginLeft: 6, color: colors.inkMuted },
+    notes: { fontSize: 13, marginTop: 16, fontStyle: 'italic', color: colors.inkMuted },
+    totalRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginTop: 24,
+      paddingTop: 16,
+      borderTopWidth: 2,
+      borderTopColor: colors.border,
+    },
+    totalLabel: { fontSize: 16, color: colors.ink },
+    totalValue: { fontSize: 20, color: colors.ink },
+    macroTotalsRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginTop: 4,
+    },
+    macroTotalsValue: { fontSize: 13, color: colors.inkMuted },
+    mealTypeHeading: {
+      fontSize: 12,
+      ...typography.label,
+      marginTop: 28,
+      marginBottom: 12,
+      color: colors.ink,
+    },
+    mealTypePills: {
+      flexDirection: 'row',
+      gap: 10,
+      flexWrap: 'wrap',
+    },
+    pill: {
+      borderRadius: 24,
+      borderWidth: 1.5,
+      paddingVertical: 8,
+      paddingHorizontal: 18,
+      borderColor: colors.border,
+    },
+    pillText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.ink,
+    },
+    pillTextActive: {
+      color: '#FFFFFF',
+    },
+    saveButton: {
+      borderRadius: 16,
+      paddingVertical: 18,
+      alignItems: 'center',
+      margin: 24,
+    },
+    saveButtonText: { fontSize: 16, letterSpacing: 1 },
+  };
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -174,89 +253,9 @@ export default function ResultScreen({ route, navigation }) {
         </View>
       </ScrollView>
 
-      <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-        <Text style={styles.saveButtonText}>Add to Today's Plate</Text>
+      <TouchableOpacity style={{ ...styles.saveButton, backgroundColor: colors.forest }} onPress={handleSave}>
+        <Text style={[styles.saveButtonText, { color: colors.ink }]}>Add to Today's Plate</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
-  content: { padding: 24, paddingBottom: 40 },
-  title: { fontSize: 22, color: colors.ink, ...typography.display, marginBottom: 16 },
-  image: { width: '100%', height: 200, borderRadius: 16, marginBottom: 20 },
-  itemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  itemName: { fontSize: 16, color: colors.ink, fontWeight: '600' },
-  itemMeta: { fontSize: 12, color: colors.inkMuted, marginTop: 2, textTransform: 'capitalize' },
-  calInput: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    width: 64,
-    textAlign: 'center',
-    paddingVertical: 6,
-    color: colors.ink,
-    backgroundColor: colors.surface,
-    marginLeft: 8,
-  },
-  kcalLabel: { fontSize: 12, color: colors.inkMuted, marginLeft: 6 },
-  notes: { fontSize: 13, color: colors.inkMuted, marginTop: 16, fontStyle: 'italic' },
-  totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 24,
-    paddingTop: 16,
-    borderTopWidth: 2,
-    borderTopColor: colors.border,
-  },
-  totalLabel: { fontSize: 16, color: colors.ink, ...typography.label },
-  totalValue: { fontSize: 20, color: colors.tomato, ...typography.display },
-  macroTotalsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 4,
-  },
-  macroTotalsValue: { fontSize: 13, color: colors.inkMuted, ...typography.label },
-  mealTypeHeading: {
-    fontSize: 12,
-    color: colors.inkMuted,
-    ...typography.label,
-    marginTop: 28,
-    marginBottom: 12,
-  },
-  mealTypePills: {
-    flexDirection: 'row',
-    gap: 10,
-    flexWrap: 'wrap',
-  },
-  pill: {
-    borderRadius: 24,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    paddingVertical: 8,
-    paddingHorizontal: 18,
-  },
-  pillText: {
-    color: colors.inkMuted,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  pillTextActive: {
-    color: colors.background,
-  },
-  saveButton: {
-    backgroundColor: colors.forest,
-    borderRadius: 16,
-    paddingVertical: 18,
-    alignItems: 'center',
-    margin: 24,
-  },
-  saveButtonText: { color: colors.ink, fontSize: 16, ...typography.label, letterSpacing: 1 },
-});
