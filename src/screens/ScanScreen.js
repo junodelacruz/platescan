@@ -17,8 +17,9 @@ import { addFoodEntry } from '../services/storageService';
 import { useTheme } from '../context/ThemeContext';
 import BackButton from '../components/BackButton';
 
-export default function ScanScreen({ navigation }) {
+export default function ScanScreen({ navigation, route }) {
   const { colors, typography } = useTheme();
+  const initialDate = route.params?.initialDate || null;
   const [imageUri, setImageUri] = useState(null);
   const [loading, setLoading] = useState(false);
   const [description, setDescription] = useState('');
@@ -66,7 +67,7 @@ export default function ScanScreen({ navigation }) {
     setLoading(true);
     try {
       const analysis = await analyzeFoodImage(imageBase64, description);
-      navigation.replace('Result', { analysis, imageUri, imageBase64 });
+      navigation.replace('Result', { analysis, imageUri, imageBase64, initialDate });
     } catch (err) {
       Alert.alert('Scan failed', err.message || 'Could not analyze this photo. Try again.');
       setShowDescriptionInput(true);

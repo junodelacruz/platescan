@@ -19,8 +19,9 @@ export default function PlateRing({ consumed, goal }) {
   const styles = {
     wrap: { width: SIZE, height: SIZE, alignItems: 'center', justifyContent: 'center' },
     center: { position: 'absolute', alignItems: 'center' },
-    calories: { fontSize: 42, color: colors.ink, ...typography.display },
-    goalLabel: { fontSize: 13, color: colors.inkMuted, ...typography.label, marginTop: 4 },
+    calories: { fontSize: 32, color: colors.ink, fontWeight: '300' },
+    goalLine: { fontSize: 14, color: colors.inkMuted, marginTop: 2, opacity: 0.7 },
+    calLabel: { fontSize: 11, color: colors.inkMuted, ...typography.label, marginTop: 4, letterSpacing: 1 },
   };
 
   return (
@@ -49,8 +50,9 @@ export default function PlateRing({ consumed, goal }) {
         />
       </Svg>
       <View style={styles.center}>
-        <Text style={styles.calories}>{Math.round(consumed)}</Text>
-        <Text style={styles.goalLabel}>of {goal} kcal</Text>
+        <Text style={styles.calories}>{Math.round(consumed).toLocaleString()}</Text>
+        <Text style={styles.goalLine}>/ {goal.toLocaleString()}</Text>
+        <Text style={styles.calLabel}>CALORIES</Text>
       </View>
     </View>
   );

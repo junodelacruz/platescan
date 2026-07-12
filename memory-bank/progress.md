@@ -1,50 +1,49 @@
-1 | # Progress
-2 |
-3 | ## Task: Move image storage from AsyncStorage to IndexedDB
-4 |
-5 | - [x] Part A: Added IndexedDB helpers (`saveImage`, `loadImage`, `deleteImage`) to `storageService.js`
-6 | - [x] Part B: Updated `addFoodEntry` — saves image to IndexedDB, strips `imageUri` from AsyncStorage write
-7 | - [x] Part C: Updated `deleteFoodEntry` — also deletes image from IndexedDB
-8 | - [x] Part D: Added `clearLegacyData()` function and called it in App.js via useEffect
-9 | - [x] Part E: Updated PlateDetailScreen.js to load images from IndexedDB via `loadImage()`
-10 | - [x] Fix: String key consistency — all IndexedDB operations use `String(entryId)` to prevent type mismatch
-11 | - [x] Memory bank updated
-12 |
-13 | - [x] SettingsScreen: Replace calorie increment buttons with TextInput + Save Goal
-14 |
-15 | ## Task: Make calories and macros editable on PlateDetailScreen
-16 |
-17 | - [x] Add state: editingField, draftValue, items
-18 | - [x] Compute display values: calories from totalCalories, macros from items array reduction
-19 | - [x] Implement handleSaveField for calories (update totalCalories)
-20 | - [x] Implement handleSaveField for macros (proportional distribution across items)
-21 | - [x] Make calories editable: Text → TextInput + ✓ on tap
-22 | - [x] Make protein editable: same pattern
-23 | - [x] Make carbs editable: same pattern
-24 | - [x] Make fat editable: same pattern
-25 | - [x] Import updateFoodEntry from storageService, TextInput from react-native
-26 | - [x] Style matches existing screen theme tokens
-27 | - [x] Web build: dist folder generated successfully
-28 | - [x] Memory bank updated
-29 |
-30 | ## Key changes
-31 |
-32 | - DB name: `platescan-images`, store: `images`
-33 | - Existing AsyncStorage image data is cleared on app load (one-time migration)
-34 | - Images now stored in IndexedDB (bypasses 10MB AsyncStorage quota limit)
-35 | - PlateDetailScreen loads images asynchronously on entry open
-36 |
-37 | ## SettingsScreen changes
-38 |
-39 | - Removed +10, +50, -10, -50 increment buttons
-40 | - Added TextInput (number-pad, pre-filled with saved goal, large 56px display style)
-41 | - Save Goal button validates 500–10000 range, saves via setCalorieGoal(), shows "✓ Saved" confirmation
-42 | - Error text displayed below input for invalid/empty values
-43 | - Uses existing theme tokens (colors.tomato, colors.forest, etc.)
-44 |
-45 | ## PlateDetailScreen editable fields
-46 |
-47 | - Calories, protein, carbs, fat are now inline editable
-48 | - Macro distribution: proportional scaling — `ratio = newValue / oldTotal`, each item's value multiplied by ratio
-49 | - `items` state tracks latest values for accurate sequential edits
-50 | - Web build output: `dist/` with bundled JS, HTML, and metadata
+# Progress
+
+## Task: Bottom Tab Bar + Weight Tracker Screen (New)
+
+- [x] Installed `@react-navigation/bottom-tabs@^6.6.1` to match peer dependency versioning
+- [x] Created `WeightTrackerScreen.js` featuring:
+  - Custom SVG line chart plotting weight trends with dynamic date/weight gridlines and coordinate dots using `react-native-svg`
+  - Range selector buttons for 7, 30, and 90 day lookback views
+  - Big current weight display and delta weight change calculations from previous log
+  - Decimal weight input field with "Log" saving action and a successful check-mark status transition
+  - Storage logging tied to AsyncStorage under `weightLog` key
+- [x] Nest Bottom Tabs in `App.js` Navigator:
+  - Main tab bar contains: Home (`Home`), History/Calendar (`History`), Weight (`Weight`), and Settings (`Settings`)
+  - Icons rendered as styled unicode text glyphs matching active/inactive theme colors
+  - Tab bar styled with `colors.surface` background, `colors.border` top edge, and height adjustment
+  - Stack navigator now retains `MainTabs` as the core wrapper, allowing full-screen overlays like `Scan`, `Result`, and `PlateDetail` to hide the tab bar
+- [x] Clean up `HomeScreen.js` header:
+  - Removed old left/right Settings gear and Calendar icon buttons from header layout
+  - Cleaned up unused styles and layout containers
+- [x] Redesign PlateRing:
+  - Changed central calorie count `fontWeight` from `'700'` to `'200'` for a thinned, lightweight, modern typeface
+
+## Task: Modernize Design Systems, Transparent Badges, & Inter Font Refinements
+
+- [x] Implemented transparent badge styling on Home / History entries:
+  - Background set to `rgba(category_color, 0.15)`
+  - Border set to `rgba(category_color, 0.35)`
+  - Text color matches category color directly instead of static white
+- [x] Dynamic Inter Font loading:
+  - Injected Google Fonts `<link>` stylesheet on web environments inside components
+  - Updated font-family references to point to `Inter` for clean display typography
+- [x] Reduced font weight across general UI components:
+  - Changed headers, list cards, text items, and buttons from heavy bold (`700`/`600`) to regular/medium weights (`500`/`400`/`300`)
+- [x] Refactored `PlateDetailScreen.js`:
+  - Updated hero image component container (fully rounded 20px corners, no border)
+  - Centered calorie metric in a card with a light 42px `fontWeight: '300'` text color of `colors.tomato`
+  - Redesigned macro columns using light-weight labels and correct accent colors
+  - Changed delete action style to a danger-themed light outline/fill pill
+- [x] Refactored `SettingsScreen.js`:
+  - Section categories formatted as cards using `colors.surface`
+  - Calorie goal input changed to a large 52px lightweight input centered with a bottom underline
+  - Save button transforms to success state (`✓ Saved`) on complete
+
+## Key Architectural Updates
+
+- Nav flow now centers on a bottom-tab bar for main views.
+- Emojis/unicode glyphs (`⊙`, `◫`, `⧖`, `◎`) serve as the main icons for Home, History, Weight, and Settings.
+- Inter font injected on web targets for consistent style.
+- Weight tracking logic persists logs locally in AsyncStorage under `weightLog`.

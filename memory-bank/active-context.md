@@ -2,17 +2,22 @@
 
 ## Current state
 
-Scan-to-AI flow enhanced with optional pre-scan description input. Users can now type a description (e.g. "Chipotle bowl, chicken, rice, guac") before scanning. The description is appended to the AI prompt for additional food context and saved to the plate entry. PlateDetailScreen displays the saved description below the macros row.
+The app UI layout has been updated to include a clean bottom tab bar navigation bar (Home, Calendar, Weight, and Settings tabs). HomeScreen's header buttons have been cleaned up and consolidated into a center-aligned date selector dropdown modal. The PlateRing center calorie value uses a thin `200` font weight. Badges now render with a translucent background wash and category-colored text, and font styles across the screens have been lightened using Google's `Inter` font on web environments. A new Weight Tracker screen has been introduced containing a custom SVG line-graph chart showing weekly/monthly weight logging.
 
 ## Last changes
 
-- `src/screens/ScanScreen.js`: Replaced immediate AI call with a description input UI after photo capture. Shows a multiline TextInput (placeholder: "Add context (optional) — e.g. Chipotle bowl, chicken, rice, guac"), a "Scan" button (sends with description), and a "Skip" button (sends without). Photo preview is shown.
-- `src/services/aiService.js`: `analyzeFoodImage` now accepts an optional `description` parameter. When non-empty, appends `Additional context from the user: <description>` to the user message.
-- `src/screens/ResultScreen.js`: Passes `description` from route params to `addFoodEntry` as the `description` field in the saved entry.
-- `src/services/storageService.js`: No changes needed — the entry shape already supports flexible fields; `description` is saved as a standard entry property.
-- `src/screens/PlateDetailScreen.js`: Displays saved `entry.description` below the macros row with a "Note:" label. Renders nothing if empty.
+- **`App.js`**: Refactored navigator layout using nested bottom tab navigators and stack screens.
+- **`src/screens/WeightTrackerScreen.js`**: Built a new weight-logging history tool using standard AsyncStorage metrics and customizable SVG chart components.
+- **`src/screens/HomeScreen.js`**:
+  - Removed top corner gear/calendar icons.
+  - Refined layout padding offsets at the bottom of the scroll container to tighten UI elements.
+  - Configured font styles to inherit `'Inter'` and toned down bold weights.
+  - Updated meal badge elements to utilize `hexToRgba` colored borders and transparency.
+- **`src/screens/PlateDetailScreen.js`**: Replaced solid delete buttons, updated header/image frame padding, customized macro columns with accent color guidelines, and updated typography weight.
+- **`src/screens/SettingsScreen.js`**: Redesigned goal updates into modular sections (Appearance and Nutrition) and applied success button check indicators.
+- **`src/components/PlateRing.js`**: Changed the central numeric tracker's fontWeight to `'200'`.
 
 ## Next steps
 
-- Test the full flow: photo → description input → scan → AI result → save → plate detail
-- Verify description is persisted and displayed correctly across sessions
+- Run visual audits of the tab bar navigation transitions and check image load offsets.
+- Double-check SVG weight plot rendering with multiple custom entries.

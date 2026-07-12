@@ -6,13 +6,23 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Switch,
+  Platform,
 } from 'react-native';
 import { getCalorieGoal, setCalorieGoal } from '../services/storageService';
 import { useTheme } from '../context/ThemeContext';
-import BackButton from '../components/BackButton'; 
+import BackButton from '../components/BackButton';
+
+const FONT = Platform.OS === 'web' ? 'Inter, system-ui, sans-serif' : undefined;
+
+function hexToRgba(hex, alpha) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
 
 export default function SettingsScreen({ navigation }) {
-  const { colors, typography, isDark, toggleTheme } = useTheme();
+  const { colors, isDark, toggleTheme } = useTheme();
   const [goalInput, setGoalInput] = useState('');
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
@@ -24,7 +34,7 @@ export default function SettingsScreen({ navigation }) {
   const handleSave = async () => {
     const parsed = parseInt(goalInput, 10);
     if (!goalInput || isNaN(parsed) || parsed < 500 || parsed > 10000) {
-      setError('Please enter a value between 500 and 10000.');
+      setError('Please enter a value between 500 and 10,000.');
       return;
     }
     setError('');
@@ -33,106 +43,154 @@ export default function SettingsScreen({ navigation }) {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const styles = {
-    safe: { flex: 1 },
-    header: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: 24,
-      paddingTop: 12,
-      paddingBottom: 8,
-    },
-    screenTitle: { fontSize: 24 },
-    content: {
-      flex: 1,
-      paddingHorizontal: 24,
-      paddingTop: 40,
-    },
-    label: {
-      fontSize: 16,
-      marginBottom: 16,
-    },
-    calorieDisplay: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: 8,
-    },
-    goalInput: {
-      fontSize: 56,
-      ...typography.display,
-      minWidth: 140,
-      textAlign: 'center',
-      borderBottomWidth: 1,
-    },
-    errorText: {
-      fontSize: 13,
-      textAlign: 'center',
-      marginTop: 8,
-    },
-    saveButton: {
-      marginTop: 40,
-      backgroundColor: colors.forest,
-      borderRadius: 16,
-      paddingVertical: 18,
-      alignItems: 'center',
-    },
-    saveButtonText: {
-      color: colors.white,
-      fontSize: 16,
-      letterSpacing: 1,
-    },
+  // Reusable section card style
+  const card = {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 12,
+    overflow: 'hidden',
   };
 
-  // No changes needed - styles are already inside the component
+  const rowBase = {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+  };
+
+  const rowLabel = {
+    fontSize: 15,
+    fontWeight: '400',
+    color: colors.ink,
+    fontFamily: FONT,
+  };
+
+  const sectionTitle = {
+    fontSize: 11,
+    fontWeight: '500',
+    color: colors.inkMuted,
+    fontFamily: FONT,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    paddingHorizontal: 4,
+    marginBottom: 6,
+    marginTop: 20,
+  };
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
-      <View style={styles.header}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      {/* Header */}
+      <View style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingTop: 12,
+        paddingBottom: 8,
+        height: 56,
+      }}>
         <BackButton onPress={() => navigation.goBack()} />
-        <Text style={[styles.screenTitle, { color: colors.ink }]}>Settings</Text>
-        <View style={{ width: 60 }} />
+        <Text style={{
+          fontSize: 17,
+          fontWeight: '500',
+          color: colors.ink,
+          fontFamily: FONT,
+          position: 'absolute',
+          left: 0, right: 0,
+          textAlign: 'center',
+        }}>
+          Settings
+        </Text>
+        {/* spacer to balance the back button */}
+        <View style={{ width: 40 }} />
       </View>
 
-      <View style={styles.content}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <Text style={[styles.label, { color: colors.inkMuted }, { marginBottom: 0 }]}>Appearance</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Text style={{ fontSize: 14, color: colors.ink, marginRight: 12 }}>{isDark ? 'Dark' : 'Light'}</Text>
+      <View style={{ flex: 1, paddingHorizontal: 20 }}>
+
+        {/* ── Appearance ─────────────────────────────── */}
+        <Text style={sectionTitle}>Appearance</Text>
+        <View style={card}>
+          <View style={rowBase}>
+            <Text style={rowLabel}>Dark Mode</Text>
             <Switch
               trackColor={{ false: colors.border, true: colors.tomato }}
-              thumbColor={colors.ink}
+              thumbColor={isDark ? colors.background : colors.inkMuted}
+              ios_backgroundColor={colors.border}
               value={isDark}
               onValueChange={toggleTheme}
             />
           </View>
         </View>
 
-        <Text style={[styles.label, { color: colors.inkMuted }]}>Daily Calorie Goal</Text>
+        {/* ── Nutrition ─────────────────────────────── */}
+        <Text style={sectionTitle}>Nutrition</Text>
+        <View style={card}>
+          <View style={[rowBase, { flexDirection: 'column', alignItems: 'flex-start', paddingBottom: 20 }]}>
+            <Text style={rowLabel}>Daily Calorie Goal</Text>
+            <Text style={{ fontSize: 12, color: colors.inkMuted, fontFamily: FONT, marginTop: 2, marginBottom: 16 }}>
+              Set your target calorie intake per day.
+            </Text>
 
-        <View style={styles.calorieDisplay}>
-          <TextInput
-            style={[styles.goalInput, { color: colors.ink }]}
-            keyboardType="number-pad"
-            value={goalInput}
-            onChangeText={(text) => {
-              setGoalInput(text);
-              if (error) setError('');
-            }}
-            placeholder="2000"
-            placeholderTextColor={colors.inkMuted}
-          />
+            {/* Large editable goal number */}
+            <View style={{ width: '100%', alignItems: 'center' }}>
+              <TextInput
+                style={{
+                  fontSize: 52,
+                  fontWeight: '300',
+                  fontFamily: FONT,
+                  color: colors.tomato,
+                  textAlign: 'center',
+                  minWidth: 160,
+                  borderBottomWidth: 1,
+                  borderBottomColor: colors.border,
+                  paddingBottom: 4,
+                }}
+                keyboardType="number-pad"
+                value={goalInput}
+                onChangeText={(text) => { setGoalInput(text); if (error) setError(''); }}
+                placeholder="2000"
+                placeholderTextColor={colors.inkMuted}
+              />
+              <Text style={{ fontSize: 12, color: colors.inkMuted, fontFamily: FONT, textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 6 }}>
+                kcal / day
+              </Text>
+            </View>
+
+            {error ? (
+              <Text style={{ fontSize: 13, color: '#E05D44', fontFamily: FONT, marginTop: 10, textAlign: 'center', width: '100%' }}>
+                {error}
+              </Text>
+            ) : null}
+          </View>
         </View>
 
-        {error ? (
-          <Text style={[styles.errorText, { color: colors.tomato }]}>{error}</Text>
-        ) : null}
-
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>
+        {/* Save button */}
+        <TouchableOpacity
+          style={{
+            marginTop: 8,
+            backgroundColor: saved ? hexToRgba('#4E7C62', 0.15) : colors.tomato,
+            borderRadius: 16,
+            paddingVertical: 16,
+            alignItems: 'center',
+            borderWidth: saved ? 1 : 0,
+            borderColor: saved ? '#4E7C62' : 'transparent',
+          }}
+          onPress={handleSave}
+        >
+          <Text style={{
+            fontSize: 15,
+            fontWeight: '500',
+            fontFamily: FONT,
+            color: saved ? '#4E7C62' : colors.background,
+            letterSpacing: 0.3,
+          }}>
             {saved ? '✓ Saved' : 'Save Goal'}
           </Text>
         </TouchableOpacity>
+
       </View>
     </SafeAreaView>
   );

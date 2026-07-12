@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
   Text,
@@ -17,7 +18,7 @@ import { useTheme } from '../context/ThemeContext';
 
 export default function ResultScreen({ route, navigation }) {
   const { colors, typography, isDark } = useTheme();
-  const { analysis, imageUri, imageBase64, description } = route.params;
+  const { analysis, imageUri, imageBase64, description, initialDate } = route.params;
   const [items, setItems] = useState(analysis.items || []);
 
   const MEAL_TYPES = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
@@ -88,9 +89,12 @@ export default function ResultScreen({ route, navigation }) {
         }
       }
 
+      // Use initialDate from navigation params (selected date from dropdown), fallback to stored date, then today
+      const timestamp = initialDate ? new Date(initialDate).getTime() : (async () => { const d = await AsyncStorage.getItem('platescan-selected-date'); return d ? new Date(d).getTime() : Date.now(); })();
+
       await addFoodEntry({
         id: entryId,
-        timestamp: Date.now(),
+        timestamp: timestamp,
         imageUri: finalImageUri,
         label: items.map((i) => i.name).join(', ') || 'Plate',
         items,
@@ -254,7 +258,7 @@ export default function ResultScreen({ route, navigation }) {
       </ScrollView>
 
       <TouchableOpacity style={{ ...styles.saveButton, backgroundColor: colors.forest }} onPress={handleSave}>
-        <Text style={[styles.saveButtonText, { color: colors.ink }]}>Add to Today's Plate</Text>
+        <Text style={[styles.saveButtonText, { color: colors.ink }]}>Add to Plate</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
