@@ -40,7 +40,7 @@ Return ONLY valid JSON (no markdown fences, no commentary) in exactly this shape
 async function lookupUSDA(foodName) {
   try {
     const query = encodeURIComponent(foodName);
-    const url = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${query}&api_key=${USDA_CONFIG.apiKey}&dataType=SR%20Legacy,Survey%20(FNDDS)&pageSize=1`;
+    const url = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${query}&api_key=rHSpCBJuu0xUI37Uopd1X1nUnfrSoiJ94LZ9y9sI&pageSize=1`;
     const res = await fetch(url);
     if (!res.ok) return null;
     const data = await res.json();
