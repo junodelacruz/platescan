@@ -1,4 +1,4 @@
-import { AI_CONFIG } from '../config';
+import { AI_CONFIG, USDA_CONFIG } from '../config';
 
 // Supported AI_CONFIG.provider values:
 //   'gemini'             -> Google Gemini API (has a genuine free tier)
@@ -8,9 +8,18 @@ import { AI_CONFIG } from '../config';
 //
 // Instructs the model to return strict JSON we can parse reliably,
 // regardless of which provider is answering.
-const SYSTEM_PROMPT = `You are a nutrition assistant analyzing a photo of a plate of food.
-Identify each distinct food item, estimate its portion size and calories,
-and return ONLY valid JSON (no markdown fences, no commentary) in exactly this shape:
+const SYSTEM_PROMPT = `You are an expert nutrition analyst estimating the caloric and macronutrient content of a meal from a photo.
+
+ACCURACY RULES — follow these strictly:
+1. PORTION SIZES: Assume restaurant and takeout portions are significantly larger than home-cooked portions. A restaurant bowl of rice is typically 200-250g, not 100g. A restaurant protein serving is typically 150-200g. Fast food portions (Chipotle, McDonald's, etc.) are always large — do not underestimate.
+2. HIDDEN CALORIES: Always account for cooking oils, butter, sauces, dressings, and marinades even when not visible. Stir-fry dishes contain significant oil. Salads with dressing add 150-300 kcal. Creamy sauces double the fat content of a dish.
+3. ESTIMATION BIAS: When uncertain, err on the side of OVERESTIMATING calories and fat. It is better to slightly overestimate than underestimate. Never round down.
+4. BRANDED FOODS: If you can identify a dish as likely from a specific restaurant chain (e.g. Chipotle burrito bowl, McDonald's burger, Subway sandwich), use that restaurant's known nutritional values as your reference, not generic home-cooked estimates. Note this in the notes field.
+5. MIXED DISHES: For complex dishes (stir-fries, curries, pasta dishes, bowls), estimate the total as a whole rather than trying to separate every ingredient — combined estimates are more accurate than summing uncertain parts.
+6. CONFIDENCE: Use "high" only when the food is clearly identifiable and portion size is obvious. Use "low" for anything partially obscured, mixed together, or difficult to distinguish. Default to "medium".
+7. MACROS: Protein and carbs are 4 kcal/g, fat is 9 kcal/g. Your per-item calories must be approximately consistent with your protein/carbs/fat values. Cross-check before responding.
+
+Return ONLY valid JSON (no markdown fences, no commentary) in exactly this shape:
 
 {
   "items": [
@@ -25,21 +34,93 @@ and return ONLY valid JSON (no markdown fences, no commentary) in exactly this s
     }
   ],
   "totalCalories": number,
-  "notes": "string, one short sentence about estimate uncertainty"
+  "notes": "string — mention if restaurant/branded food was detected, and flag any items with high uncertainty"
 }`;
 
+async function lookupUSDA(foodName) {
+  try {
+    const query = encodeURIComponent(foodName);
+    const url = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${query}&api_key=${USDA_CONFIG.apiKey}&dataType=SR%20Legacy,Survey%20(FNDDS)&pageSize=1`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const food = data?.foods?.[0];
+    if (!food) return null;
+
+    const nutrients = food.foodNutrients || [];
+    const get = (name) => nutrients.find(n => n.nutrientName === name)?.value ?? null;
+
+    const caloriesPer100g = get('Energy');
+    const proteinPer100g = get('Protein');
+    const carbsPer100g = get('Carbohydrate, by difference');
+    const fatPer100g = get('Total lipid (fat)');
+
+    // Return null if we couldn't get the key macros
+    if (caloriesPer100g === null || proteinPer100g === null) return null;
+
+    return { caloriesPer100g, proteinPer100g, carbsPer100g: carbsPer100g ?? 0, fatPer100g: fatPer100g ?? 0 };
+  } catch (e) {
+    console.warn('USDA lookup failed for:', foodName, e.message);
+    return null;
+  }
+}
+
+async function enrichWithUSDA(analysisResult) {
+  // For each item, attempt a USDA lookup and replace macros if found
+  // Run lookups in parallel for speed
+  const enriched = await Promise.all(
+    analysisResult.items.map(async (item) => {
+      const usda = await lookupUSDA(item.name);
+      if (!usda) {
+        // No USDA match — keep AI values as-is
+        return item;
+      }
+      const grams = item.estimatedGrams || 100;
+      const ratio = grams / 100;
+      const calories = Math.round(usda.caloriesPer100g * ratio);
+      const protein = Math.round(usda.proteinPer100g * ratio);
+      const carbs = Math.round(usda.carbsPer100g * ratio);
+      const fat = Math.round(usda.fatPer100g * ratio);
+      return {
+        ...item,
+        calories,
+        protein,
+        carbs,
+        fat,
+        // Upgrade confidence since we have a database source
+        confidence: 'high',
+      };
+    })
+  );
+
+  // Recompute totalCalories from enriched items
+  const totalCalories = enriched.reduce((s, i) => s + i.calories, 0);
+
+  return {
+    ...analysisResult,
+    items: enriched,
+    totalCalories,
+    notes: (analysisResult.notes || '') + ' Macros cross-referenced with USDA FoodData Central where available.',
+  };
+}
+
 export async function analyzeFoodImage(base64Image, description = '') {
+  let result;
   switch (AI_CONFIG.provider) {
     case 'odysseus':
     case 'openai-compatible':
-      return callOpenAICompatible(base64Image, description);
+      result = await callOpenAICompatible(base64Image, description);
+      break;
     case 'anthropic':
-      return callAnthropic(base64Image, description);
+      result = await callAnthropic(base64Image, description);
+      break;
     case 'gemini':
-      return callGemini(base64Image, description);
+      result = await callGemini(base64Image, description);
+      break;
     default:
       throw new Error(`Unknown AI provider: ${AI_CONFIG.provider}`);
   }
+  return enrichWithUSDA(result);
 }
 
 async function callOpenAICompatible(base64Image, description = '') {

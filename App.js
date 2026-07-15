@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 import React, { useEffect } from 'react';
-import { View, Platform } from 'react-native';
+import { View, Platform, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -15,6 +15,7 @@ import PlateDetailScreen from './src/screens/PlateDetailScreen';
 import WeightTrackerScreen from './src/screens/WeightTrackerScreen';
 import { clearLegacyData } from './src/services/storageService';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -39,40 +40,54 @@ function TabIcon({ name, focused, color }) {
 
 function MainTabs() {
   const { colors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
+
+  // Dynamic bottom margin: on devices with safe area (like notch iPhones), use insets.bottom + 8.
+  // On other devices, use 12px for breathing room.
+  const bottomMargin = insets.bottom > 0 ? insets.bottom + 8 : 12;
 
   return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarIcon: ({ focused, color }) => (
-          <TabIcon name={route.name} focused={focused} color={color} />
-        ),
-        tabBarActiveTintColor: '#333333',
-        tabBarInactiveTintColor: '#999999',
-        tabBarLabelStyle: {
-          fontSize: 10,
-          fontFamily: FONT,
-          fontWeight: '500',
-          marginBottom: 2,
-        },
-        tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.border,
-          borderTopWidth: 1,
-          height: 60,
-          paddingTop: 6,
-          paddingBottom: 0,
-          marginBottom: 12,
-        },
-      })}
-    >
+    <View style={[styles.tabBarWrapper, { backgroundColor: colors.surface }]}>
+      <Tab.Navigator
+        screenOptions={({ route }) => ({
+          headerShown: false,
+          tabBarIcon: ({ focused, color }) => (
+            <TabIcon name={route.name} focused={focused} color={color} />
+          ),
+          tabBarActiveTintColor: isDark ? colors.tomato : '#333333',
+          tabBarInactiveTintColor: isDark ? colors.inkMuted : '#999999',
+          tabBarLabelStyle: {
+            fontSize: 10,
+            fontFamily: FONT,
+            fontWeight: '500',
+            marginBottom: 2,
+          },
+          tabBarStyle: {
+            backgroundColor: colors.surface,
+            borderTopColor: colors.border,
+            borderTopWidth: 1,
+            height: 60,
+            paddingTop: 6,
+            paddingBottom: 0,
+            marginBottom: bottomMargin,
+          },
+        })}
+      >
       <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarLabel: 'Home' }} />
       <Tab.Screen name="History" component={HistoryScreen} options={{ tabBarLabel: 'Calendar' }} />
       <Tab.Screen name="Weight" component={WeightTrackerScreen} options={{ tabBarLabel: 'Weight' }} />
       <Tab.Screen name="Settings" component={SettingsScreen} options={{ tabBarLabel: 'Settings' }} />
-    </Tab.Navigator>
+      </Tab.Navigator>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  tabBarWrapper: {
+    flex: 1,
+    backgroundColor: '#2A241E',
+  },
+});
 
 function AppNavigator() {
   const { colors, isDark } = useTheme();
@@ -103,8 +118,10 @@ export default function App() {
   }, []);
 
   return (
-    <ThemeProvider>
-      <AppNavigator />
-    </ThemeProvider>
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <AppNavigator />
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }

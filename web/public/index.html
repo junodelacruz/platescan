@@ -16,11 +16,18 @@
       body {
         height: 100%;
         margin: 0 !important;
+        padding: 0 !important;
         background-color: #1C1814; /* dark theme default — JS will override on load */
       }
       /* These styles disable body scrolling if you are using <ScrollView> */
       body {
         overflow: hidden;
+      }
+      /* Ensure root fills viewport with no gaps */
+      #root,
+      #root > div {
+        margin: 0 !important;
+        padding: 0 !important;
       }
       /* These styles make the root element full-height */
       #root {

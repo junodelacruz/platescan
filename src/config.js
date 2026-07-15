@@ -45,4 +45,8 @@ export const AI_CONFIG = {
 //   model: '<your loaded vision model>'
 // ---------------------------------------------------------------------------
 
+export const USDA_CONFIG = {
+  apiKey: 'rHSpCBJuu0xUI37Uopd1X1nUnfrSoiJ94LZ9y9sI',
+};
+
 export const DAILY_CALORIE_GOAL = 1900;
