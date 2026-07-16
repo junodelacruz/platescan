@@ -36,7 +36,7 @@ function dateKey(date) {
   return `${y}-${m}-${d}`;
 }
 
-function MealEntryRow({ entry, navigation }) {
+function MealEntryRow({ entry, entries = [], navigation }) {
   const { colors } = useTheme();
   const [imageUri, setImageUri] = useState(null);
 
@@ -52,6 +52,7 @@ function MealEntryRow({ entry, navigation }) {
   const cVal = Math.round(entry.macros?.carbs ?? entry.items?.reduce((s, i) => s + (i.carbs || 0), 0) ?? 0);
   const fVal = Math.round(entry.macros?.fat ?? entry.items?.reduce((s, i) => s + (i.fat || 0), 0) ?? 0);
 
+  const entryIndex = entries.indexOf(entry);
   return (
     <TouchableOpacity
       style={{
@@ -66,7 +67,11 @@ function MealEntryRow({ entry, navigation }) {
         overflow: 'hidden',
       }}
       activeOpacity={0.7}
-      onPress={() => navigation.navigate('PlateDetail', { entry })}
+      onPress={() => navigation.navigate('PlateDetail', {
+        entry,
+        entries: entries,
+        index: entryIndex,
+      })}
     >
       {imageUri ? (
         <Image
@@ -558,6 +563,7 @@ export default function HistoryScreen({ navigation }) {
                       <MealEntryRow
                         key={entry.id}
                         entry={entry}
+                        entries={selectedEntries}
                         navigation={navigation}
                       />
                     ))}

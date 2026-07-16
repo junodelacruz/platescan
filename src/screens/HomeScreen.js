@@ -284,9 +284,14 @@ export default function HomeScreen({ navigation }) {
         ListEmptyComponent={
           <Text style={styles.emptyText}>Nothing logged on this day.</Text>
         }
-        renderItem={({ item }) => (
-          <EntryRow item={item} navigation={navigation} />
-        )}
+  renderItem={({ item, index }) => (
+    <EntryRow
+      item={item}
+      index={index}
+      entries={dayEntries.slice().reverse()}
+      navigation={navigation}
+    />
+  )}
       />
 
       <TouchableOpacity style={styles.scanButton} onPress={handleNavigateToScan}>
@@ -343,7 +348,7 @@ export default function HomeScreen({ navigation }) {
 }
 
 // SECTION 5 — Plate card
-function EntryRow({ item, navigation }) {
+function EntryRow({ item, index, entries, navigation }) {
   const { colors } = useTheme();
   const [imageUri, setImageUri] = useState(null);
 
@@ -403,7 +408,11 @@ function EntryRow({ item, navigation }) {
     <TouchableOpacity
       style={cardStyle}
       activeOpacity={0.7}
-      onPress={() => navigation.navigate('PlateDetail', { entry: item })}
+      onPress={() => navigation.navigate('PlateDetail', {
+        entry: item,
+        entries: entries,
+        index: index,
+      })}
     >
       {/* Thumbnail */}
       {imageUri ? (
