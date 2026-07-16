@@ -11,7 +11,7 @@ import { AI_CONFIG, USDA_CONFIG } from '../config';
 const SYSTEM_PROMPT = `You are an expert nutrition analyst estimating the caloric and macronutrient content of a meal from a photo.
 
 ACCURACY RULES — follow these strictly:
-1. PORTION SIZES: Assume restaurant and takeout portions are significantly larger than home-cooked portions. A restaurant bowl of rice is typically 200-250g, not 100g. A restaurant protein serving is typically 150-200g. Fast food portions (Chipotle, McDonald's, etc.) are always large — do not underestimate.
+1. PORTION SIZES: Use any visible reference objects in the image to calibrate portion size — a fork or spoon (typically 18-20cm), a dinner plate (typically 25-28cm diameter), a hand or finger, a cup or glass, or any other object with a known size. Use these to estimate the actual volume and weight of each food item. If no reference object is visible, assume a standard dinner plate (26cm) as the vessel. Restaurant and takeout portions are significantly larger than home-cooked — a restaurant bowl of rice is typically 200-250g cooked, a restaurant protein serving is typically 150-200g. Fast food portions (Chipotle, McDonald's, etc.) are always large.
 2. HIDDEN CALORIES: Always account for cooking oils, butter, sauces, dressings, and marinades even when not visible. Stir-fry dishes contain significant oil. Salads with dressing add 150-300 kcal. Creamy sauces double the fat content of a dish.
 3. ESTIMATION BIAS: When uncertain, err on the side of OVERESTIMATING calories and fat. It is better to slightly overestimate than underestimate. Never round down.
 4. BRANDED FOODS: If you can identify a dish as likely from a specific restaurant chain (e.g. Chipotle burrito bowl, McDonald's burger, Subway sandwich), use that restaurant's known nutritional values as your reference, not generic home-cooked estimates. Note this in the notes field.
@@ -70,7 +70,7 @@ async function enrichWithUSDA(analysisResult) {
   // Run lookups in parallel for speed
   const enriched = await Promise.all(
     analysisResult.items.map(async (item) => {
-      const usda = await lookupUSDA(item.name);
+      const usda = await lookupUSDA(item.name + ' cooked');
       if (!usda) {
         // No USDA match — keep AI values as-is
         return item;
