@@ -128,10 +128,15 @@ async function twoPassAnalysis(base64Image, description, provider) {
   const mergedItems = pass2Result.items.map((item, idx) => ({
     ...item,
     estimatedGrams: pass1Result.items[idx]?.estimatedGrams ?? item.estimatedGrams,
+    calories: Math.round(item.calories ?? 0),
+    protein: Math.round(item.protein ?? 0),
+    carbs: Math.round(item.carbs ?? 0),
+    fat: Math.round(item.fat ?? 0),
   }));
 
   return {
     ...pass2Result,
+    totalCalories: Math.round(pass2Result.totalCalories ?? 0),
     items: mergedItems,
   };
 }
@@ -436,7 +441,19 @@ async function callOpenAICompatible(base64Image, description = '') {
   }
   const data = await res.json();
   const text = data?.choices?.[0]?.message?.content ?? '';
-  return parseModelJson(text);
+  const rawResult = parseModelJson(text);
+  const roundedItems = (rawResult?.items || []).map(item => ({
+    ...item,
+    calories: Math.round(item.calories ?? 0),
+    protein: Math.round(item.protein ?? 0),
+    carbs: Math.round(item.carbs ?? 0),
+    fat: Math.round(item.fat ?? 0),
+  }));
+  return {
+    ...rawResult,
+    totalCalories: Math.round(rawResult.totalCalories ?? 0),
+    items: roundedItems,
+  };
 }
 
 async function callAnthropic(base64Image, description = '') {
@@ -472,7 +489,19 @@ async function callAnthropic(base64Image, description = '') {
   }
   const data = await res.json();
   const text = data?.content?.find((b) => b.type === 'text')?.text ?? '';
-  return parseModelJson(text);
+  const rawResult = parseModelJson(text);
+  const roundedItems = (rawResult?.items || []).map(item => ({
+    ...item,
+    calories: Math.round(item.calories ?? 0),
+    protein: Math.round(item.protein ?? 0),
+    carbs: Math.round(item.carbs ?? 0),
+    fat: Math.round(item.fat ?? 0),
+  }));
+  return {
+    ...rawResult,
+    totalCalories: Math.round(rawResult.totalCalories ?? 0),
+    items: roundedItems,
+  };
 }
 
 const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-3.1-flash-lite', 'gemini-3.5-flash'];
@@ -539,7 +568,20 @@ async function callGemini(base64Image, description = '') {
       }
       const data = await res.json();
       const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-      return parseModelJson(text);
+      const rawResult = parseModelJson(text);
+      // Round the four macro fields to whole numbers
+      const roundedItems = (rawResult?.items || []).map(item => ({
+        ...item,
+        calories: Math.round(item.calories ?? 0),
+        protein: Math.round(item.protein ?? 0),
+        carbs: Math.round(item.carbs ?? 0),
+        fat: Math.round(item.fat ?? 0),
+      }));
+      return {
+        ...rawResult,
+        totalCalories: Math.round(rawResult.totalCalories ?? 0),
+        items: roundedItems,
+      };
     } catch (err) {
       console.warn(`Gemini model ${model} failed:`, err.message || err);
       lastError = err;

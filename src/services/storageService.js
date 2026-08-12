@@ -64,11 +64,24 @@ export async function getFoodLog() {
 export async function addFoodEntry(entry) {
   const log = await getFoodLog();
 
+  // Round item-level macros and calories before aggregation
+  const roundedItems = (entry.items || []).map(item => ({
+    ...item,
+    calories: Math.round(item.calories || 0),
+    protein: Math.round(item.protein || 0),
+    carbs: Math.round(item.carbs || 0),
+    fat: Math.round(item.fat || 0),
+  }));
+
   // Aggregate macros from items if not already present on the entry
   const macros = entry.macros
-    ? entry.macros
-    : entry.items && entry.items.length > 0
-      ? entry.items.reduce(
+    ? {
+        protein: Math.round(entry.macros.protein || 0),
+        carbs: Math.round(entry.macros.carbs || 0),
+        fat: Math.round(entry.macros.fat || 0),
+      }
+    : roundedItems.length > 0
+      ? roundedItems.reduce(
         (acc, item) => ({
           protein: (acc.protein || 0) + (Number(item.protein) || 0),
           carbs: (acc.carbs || 0) + (Number(item.carbs) || 0),
@@ -78,7 +91,13 @@ export async function addFoodEntry(entry) {
       )
       : { protein: 0, carbs: 0, fat: 0 };
 
-  const updatedEntry = { ...entry, macros };
+  // Round macros and entry-level calories before storage
+  const roundedMacros = {
+    protein: Math.round(macros.protein || 0),
+    carbs: Math.round(macros.carbs || 0),
+    fat: Math.round(macros.fat || 0),
+  };
+  const updatedEntry = { ...entry, macros: roundedMacros, calories: Math.round(entry.calories || 0), items: roundedItems };
 
   // Part B: Save image to IndexedDB, strip imageUri from AsyncStorage
   try {
@@ -131,18 +150,40 @@ export async function updateFoodEntry(id, updatedFields) {
   const log = await getFoodLog();
   const index = log.findIndex(e => e.id === id);
   if (index === -1) return log;
-  log[index] = { ...log[index], ...updatedFields };
-  // Recompute macros from items if items was updated
+
+  // Round item-level macros and calories if items were updated
+  let roundedItems = undefined;
   if (updatedFields.items && updatedFields.items.length > 0) {
-    log[index].macros = updatedFields.items.reduce(
-      (acc, item) => ({
-        protein: (acc.protein || 0) + (Number(item.protein) || 0),
-        carbs: (acc.carbs || 0) + (Number(item.carbs) || 0),
-        fat: (acc.fat || 0) + (Number(item.fat) || 0),
-      }),
-      { protein: 0, carbs: 0, fat: 0 }
-    );
+    roundedItems = updatedFields.items.map(item => ({
+      ...item,
+      calories: Math.round(item.calories || 0),
+      protein: Math.round(item.protein || 0),
+      carbs: Math.round(item.carbs || 0),
+      fat: Math.round(item.fat || 0),
+    }));
   }
+
+  log[index] = { ...log[index], ...updatedFields, items: roundedItems || log[index].items };
+
+  // Recompute macros from items if items were updated
+  if (roundedItems && roundedItems.length > 0) {
+    log[index].macros = {
+      protein: Math.round(roundedItems.reduce((acc, item) => acc + (Number(item.protein) || 0), 0)),
+      carbs: Math.round(roundedItems.reduce((acc, item) => acc + (Number(item.carbs) || 0), 0)),
+      fat: Math.round(roundedItems.reduce((acc, item) => acc + (Number(item.fat) || 0), 0)),
+    };
+  }
+
+  // Round entry-level calories and macros before persisting
+  log[index] = {
+    ...log[index],
+    calories: Math.round(log[index].calories || 0),
+    macros: log[index].macros ? {
+      protein: Math.round(log[index].macros.protein || 0),
+      carbs: Math.round(log[index].macros.carbs || 0),
+      fat: Math.round(log[index].macros.fat || 0),
+    } : log[index].macros,
+  };
   await AsyncStorage.setItem(LOG_KEY, JSON.stringify(log));
   return log;
 }
