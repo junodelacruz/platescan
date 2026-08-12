@@ -1,4 +1,4 @@
-import { AI_CONFIG, USDA_CONFIG } from '../config';
+import { AI_CONFIG } from '../config';
 
 // Supported AI_CONFIG.provider values:
 //   'gemini'             -> Google Gemini API (has a genuine free tier)
@@ -8,6 +8,56 @@ import { AI_CONFIG, USDA_CONFIG } from '../config';
 //
 // Instructs the model to return strict JSON we can parse reliably,
 // regardless of which provider is answering.
+// Pass 1: Vision prompt - identifies foods and weights
+const VISION_PROMPT = `You are a food recognition specialist. Your only job is to identify the foods visible in this photo and estimate the weight of each portion in grams.
+
+RULES:
+1. REFERENCE OBJECTS: Use any visible reference objects to calibrate portion size — a fork or spoon (18-20cm), a dinner plate (25-28cm diameter), a hand, a cup or glass. If no reference object is visible, assume a standard dinner plate (26cm).
+2. PORTION SIZES: Restaurant and takeout portions are significantly larger than home-cooked. A restaurant rice portion is typically 200-250g cooked. A restaurant protein serving is 150-200g. Fast food portions are always large.
+3. IDENTIFY PREPARATION: Note how each food is prepared (grilled, fried, steamed, raw, with sauce, etc.) as this affects nutrition in Pass 2.
+4. BRANDED FOODS: If you can identify a specific restaurant chain, note it by name — this is critical for accurate nutrition in the next step.
+
+Return ONLY valid JSON in exactly this shape:
+{
+  "items": [
+    {
+      "name": "string — specific food name including preparation method e.g. 'steamed white rice', 'grilled chicken breast', 'stir-fried broccoli in oil'",
+      "estimatedGrams": number,
+      "preparation": "string — brief preparation notes e.g. 'deep fried', 'steamed', 'raw', 'with cream sauce'",
+      "confidence": "low" | "medium" | "high"
+    }
+  ],
+  "restaurantChain": "string | null — name of restaurant chain if identifiable, otherwise null",
+  "notes": "string — any relevant context about the meal"
+}`;
+
+// Pass 2: Nutrition prompt - calculates calories and macros
+const NUTRITION_PROMPT = `You are a nutrition expert. You will be given a list of identified food items with their weights in grams. Calculate the calories and macronutrients for each item.
+
+RULES:
+1. MACROS MUST BE CONSISTENT: Protein and carbs are 4 kcal/g, fat is 9 kcal/g. Your calories must approximately equal (protein × 4) + (carbs × 4) + (fat × 9). Cross-check every item before responding.
+2. PREPARATION MATTERS: Account for cooking method — deep fried adds significant fat, steamed adds none, sauces add both carbs and fat.
+3. BRANDED FOODS: If a restaurant chain is provided, use that chain's known nutritional values scaled to the given weight.
+4. HIDDEN CALORIES: Account for cooking oils, butter, sauces even when not explicitly listed. Stir-fry = significant oil. Salad dressing = 150-300 kcal extra.
+5. DO NOT ROUND DOWN: When uncertain, err toward overestimating fat and calories.
+
+Return ONLY valid JSON in exactly this shape:
+{
+  "items": [
+    {
+      "name": "string",
+      "estimatedGrams": number,
+      "calories": number,
+      "protein": number,
+      "carbs": number,
+      "fat": number,
+      "confidence": "low" | "medium" | "high"
+    }
+  ],
+  "totalCalories": number,
+  "notes": "string"
+}`;
+
 const SYSTEM_PROMPT = `You are an expert nutrition analyst estimating the caloric and macronutrient content of a meal from a photo.
 
 ACCURACY RULES — follow these strictly:
@@ -37,90 +87,326 @@ Return ONLY valid JSON (no markdown fences, no commentary) in exactly this shape
   "notes": "string — mention if restaurant/branded food was detected, and flag any items with high uncertainty"
 }`;
 
-async function lookupUSDA(foodName) {
-  try {
-    const query = encodeURIComponent(foodName);
-    const url = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${query}&api_key=rHSpCBJuu0xUI37Uopd1X1nUnfrSoiJ94LZ9y9sI&pageSize=1`;
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const data = await res.json();
-    const food = data?.foods?.[0];
-    if (!food) return null;
-
-    const nutrients = food.foodNutrients || [];
-    const get = (name) => nutrients.find(n => n.nutrientName === name)?.value ?? null;
-
-    const caloriesPer100g = get('Energy');
-    const proteinPer100g = get('Protein');
-    const carbsPer100g = get('Carbohydrate, by difference');
-    const fatPer100g = get('Total lipid (fat)');
-
-    // Return null if we couldn't get the key macros
-    if (caloriesPer100g === null || proteinPer100g === null) return null;
-
-    return { caloriesPer100g, proteinPer100g, carbsPer100g: carbsPer100g ?? 0, fatPer100g: fatPer100g ?? 0 };
-  } catch (e) {
-    console.warn('USDA lookup failed for:', foodName, e.message);
-    return null;
-  }
+export async function analyzeFoodImage(base64Image, description = '') {
+  return twoPassAnalysis(base64Image, description, AI_CONFIG.provider);
 }
 
-async function enrichWithUSDA(analysisResult) {
-  // For each item, attempt a USDA lookup and replace macros if found
-  // Run lookups in parallel for speed
-  const enriched = await Promise.all(
-    analysisResult.items.map(async (item) => {
-      const usda = await lookupUSDA(item.name + ' cooked');
-      if (!usda) {
-        // No USDA match — keep AI values as-is
-        return item;
-      }
-      const grams = item.estimatedGrams || 100;
-      const ratio = grams / 100;
-      const calories = Math.round(usda.caloriesPer100g * ratio);
-      const protein = Math.round(usda.proteinPer100g * ratio);
-      const carbs = Math.round(usda.carbsPer100g * ratio);
-      const fat = Math.round(usda.fatPer100g * ratio);
-      return {
-        ...item,
-        calories,
-        protein,
-        carbs,
-        fat,
-        // Upgrade confidence since we have a database source
-        confidence: 'high',
-      };
-    })
-  );
+// ─── TWO-PASS ORCHESTRATOR ───
+async function twoPassAnalysis(base64Image, description, provider) {
+  // PASS 1: Vision — identify foods and weights from image
+  let pass1Result;
+  try {
+    pass1Result = await runPass1(base64Image, description, provider);
+  } catch (err) {
+    throw new Error(`Pass 1 (vision) failed: ${err.message}`);
+  }
 
-  // Recompute totalCalories from enriched items
-  const totalCalories = enriched.reduce((s, i) => s + i.calories, 0);
+  // Build the text input for Pass 2 from Pass 1 results
+  const itemDescriptions = pass1Result.items.map(item =>
+    `- ${item.name}: ${item.estimatedGrams}g (preparation: ${item.preparation || 'standard'})`
+  ).join('\n');
+
+  const pass2Input = [
+    pass1Result.restaurantChain ? `Restaurant: ${pass1Result.restaurantChain}` : null,
+    `Foods identified from photo:`,
+    itemDescriptions,
+    description ? `Additional context: ${description}` : null,
+    `Calculate calories and macros for each item listed above.`,
+  ].filter(Boolean).join('\n');
+
+  // PASS 2: Nutrition — calculate calories and macros from identified foods (text only, no image)
+  let pass2Result;
+  try {
+    pass2Result = await runPass2(pass2Input, provider);
+  } catch (err) {
+    // If Pass 2 fails, fall back to Pass 1 with a single-pass attempt
+    console.warn('Pass 2 failed, falling back to single-pass:', err.message);
+    return callSinglePass(base64Image, description, provider);
+  }
+
+  // Merge Pass 1's estimatedGrams into Pass 2's result (Pass 2 may not perfectly preserve them)
+  const mergedItems = pass2Result.items.map((item, idx) => ({
+    ...item,
+    estimatedGrams: pass1Result.items[idx]?.estimatedGrams ?? item.estimatedGrams,
+  }));
 
   return {
-    ...analysisResult,
-    items: enriched,
-    totalCalories,
-    notes: (analysisResult.notes || '') + ' Macros cross-referenced with USDA FoodData Central where available.',
+    ...pass2Result,
+    items: mergedItems,
   };
 }
 
-export async function analyzeFoodImage(base64Image, description = '') {
-  let result;
-  switch (AI_CONFIG.provider) {
+// ─── PASS 1 RUNNER (image + vision prompt) ───
+async function runPass1(base64Image, description, provider) {
+  switch (provider) {
+    case 'gemini':
+      return runPass1Gemini(base64Image, description);
+    case 'anthropic':
+      return runPass1Anthropic(base64Image, description);
     case 'odysseus':
     case 'openai-compatible':
-      result = await callOpenAICompatible(base64Image, description);
-      break;
-    case 'anthropic':
-      result = await callAnthropic(base64Image, description);
-      break;
-    case 'gemini':
-      result = await callGemini(base64Image, description);
-      break;
+      return runPass1OpenAI(base64Image, description);
     default:
-      throw new Error(`Unknown AI provider: ${AI_CONFIG.provider}`);
+      throw new Error(`Unknown provider: ${provider}`);
   }
-  return enrichWithUSDA(result);
+}
+
+async function runPass1Gemini(base64Image, description = '') {
+  const parts = [
+    { text: VISION_PROMPT },
+    ...(description ? [{ text: description }] : []),
+    { inline_data: { mime_type: 'image/jpeg', data: base64Image } },
+  ];
+
+  const modelsToTry = [AI_CONFIG.model, ...GEMINI_MODELS.filter((m) => m !== AI_CONFIG.model)];
+
+  for (const model of modelsToTry) {
+    try {
+      console.log(`Attempting Pass 1 (vision) with Gemini model: ${model}`);
+      const url = `${AI_CONFIG.baseUrl}/models/${model}:generateContent?key=${AI_CONFIG.apiKey}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: VISION_PROMPT }] },
+          contents: [{ parts: parts }],
+          generationConfig: {
+            maxOutputTokens: 2000,
+            responseSchema: {
+              type: 'OBJECT',
+              properties: {
+                items: {
+                  type: 'ARRAY',
+                  items: {
+                    type: 'OBJECT',
+                    properties: {
+                      name: { type: 'STRING' },
+                      estimatedGrams: { type: 'NUMBER' },
+                      preparation: { type: 'STRING' },
+                      confidence: { type: 'STRING', enum: ['low', 'medium', 'high'] },
+                    },
+                    required: ['name', 'estimatedGrams', 'preparation', 'confidence'],
+                  },
+                },
+                restaurantChain: { type: 'STRING' },
+                notes: { type: 'STRING' },
+              },
+              required: ['items', 'notes'],
+            },
+          },
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`AI request failed (${res.status}): ${await safeText(res)}`);
+      }
+      const data = await res.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+      return parseModelJson(text);
+    } catch (err) {
+      console.warn(`Pass 1 Gemini model ${model} failed:`, err.message || err);
+    }
+  }
+  throw new Error('All Pass 1 Gemini models failed.');
+}
+
+async function runPass1Anthropic(base64Image, description = '') {
+  const contentParts = [
+    { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64Image } },
+    { type: 'text', text: VISION_PROMPT },
+  ];
+  if (description) {
+    contentParts.push({ type: 'text', text: description });
+  }
+  const res = await fetch(`${AI_CONFIG.baseUrl}/v1/messages`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': AI_CONFIG.apiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: AI_CONFIG.model,
+      max_tokens: 2000,
+      system: VISION_PROMPT,
+      messages: [{ role: 'user', content: contentParts }],
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`AI request failed (${res.status}): ${await safeText(res)}`);
+  }
+  const data = await res.json();
+  const text = data?.content?.find((b) => b.type === 'text')?.text ?? '';
+  return parseModelJson(text);
+}
+
+async function runPass1OpenAI(base64Image, description = '') {
+  const userText = [
+    { type: 'text', text: VISION_PROMPT },
+    ...(description ? [{ type: 'text', text: description }] : []),
+    { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64Image}` } },
+  ];
+  const res = await fetch(`${AI_CONFIG.baseUrl}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(AI_CONFIG.apiKey ? { Authorization: `Bearer ${AI_CONFIG.apiKey}` } : {}),
+    },
+    body: JSON.stringify({
+      model: AI_CONFIG.model,
+      messages: [
+        { role: 'system', content: VISION_PROMPT },
+        { role: 'user', content: userText },
+      ],
+      max_tokens: 2000,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`AI request failed (${res.status}): ${await safeText(res)}`);
+  }
+  const data = await res.json();
+  const text = data?.choices?.[0]?.message?.content ?? '';
+  return parseModelJson(text);
+}
+
+// ─── PASS 2 RUNNER (text-only, nutrition prompt) ───
+async function runPass2(textInput, provider) {
+  switch (provider) {
+    case 'gemini':
+      return runPass2Gemini(textInput);
+    case 'anthropic':
+      return runPass2Anthropic(textInput);
+    case 'odysseus':
+    case 'openai-compatible':
+      return runPass2OpenAI(textInput);
+    default:
+      throw new Error(`Unknown provider: ${provider}`);
+  }
+}
+
+async function runPass2Gemini(textInput) {
+  const parts = [{ text: textInput }];
+
+  const modelsToTry = [AI_CONFIG.model, ...GEMINI_MODELS.filter((m) => m !== AI_CONFIG.model)];
+
+  for (const model of modelsToTry) {
+    try {
+      console.log(`Attempting Pass 2 (nutrition) with Gemini model: ${model}`);
+      const url = `${AI_CONFIG.baseUrl}/models/${model}:generateContent?key=${AI_CONFIG.apiKey}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: NUTRITION_PROMPT }] },
+          contents: [{ parts: parts }],
+          generationConfig: {
+            maxOutputTokens: 4000,
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: 'OBJECT',
+              properties: {
+                items: {
+                  type: 'ARRAY',
+                  items: {
+                    type: 'OBJECT',
+                    properties: {
+                      name: { type: 'STRING' },
+                      estimatedGrams: { type: 'NUMBER' },
+                      calories: { type: 'NUMBER' },
+                      protein: { type: 'NUMBER' },
+                      carbs: { type: 'NUMBER' },
+                      fat: { type: 'NUMBER' },
+                      confidence: { type: 'STRING', enum: ['low', 'medium', 'high'] },
+                    },
+                    required: ['name', 'estimatedGrams', 'calories', 'protein', 'carbs', 'fat', 'confidence'],
+                  },
+                },
+                totalCalories: { type: 'NUMBER' },
+                notes: { type: 'STRING' },
+              },
+              required: ['items', 'totalCalories', 'notes'],
+            },
+          },
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`AI request failed (${res.status}): ${await safeText(res)}`);
+      }
+      const data = await res.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+      return parseModelJson(text);
+    } catch (err) {
+      console.warn(`Pass 2 Gemini model ${model} failed:`, err.message || err);
+    }
+  }
+  throw new Error('All Pass 2 Gemini models failed.');
+}
+
+async function runPass2Anthropic(textInput) {
+  const res = await fetch(`${AI_CONFIG.baseUrl}/v1/messages`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': AI_CONFIG.apiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: AI_CONFIG.model,
+      max_tokens: 4000,
+      system: NUTRITION_PROMPT,
+      messages: [{ role: 'user', content: [{ type: 'text', text: textInput }] }],
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`AI request failed (${res.status}): ${await safeText(res)}`);
+  }
+  const data = await res.json();
+  const text = data?.content?.find((b) => b.type === 'text')?.text ?? '';
+  return parseModelJson(text);
+}
+
+async function runPass2OpenAI(textInput) {
+  const res = await fetch(`${AI_CONFIG.baseUrl}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(AI_CONFIG.apiKey ? { Authorization: `Bearer ${AI_CONFIG.apiKey}` } : {}),
+    },
+    body: JSON.stringify({
+      model: AI_CONFIG.model,
+      messages: [
+        { role: 'system', content: NUTRITION_PROMPT },
+        { role: 'user', content: textInput },
+      ],
+      max_tokens: 4000,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`AI request failed (${res.status}): ${await safeText(res)}`);
+  }
+  const data = await res.json();
+  const text = data?.choices?.[0]?.message?.content ?? '';
+  return parseModelJson(text);
+}
+
+// ─── SINGLE-PASS FALLBACK ───
+async function callSinglePass(base64Image, description, provider) {
+  switch (provider) {
+    case 'odysseus':
+    case 'openai-compatible':
+      return callOpenAICompatible(base64Image, description);
+    case 'anthropic':
+      return callAnthropic(base64Image, description);
+    case 'gemini':
+      return callGemini(base64Image, description);
+    default:
+      throw new Error(`Unknown provider: ${provider}`);
+  }
 }
 
 async function callOpenAICompatible(base64Image, description = '') {

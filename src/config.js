@@ -32,21 +32,4 @@ export const AI_CONFIG = {
   model: 'gemini-2.5-flash',
 };
 
-// ---------------------------------------------------------------------------
-// Alternatives, if you want them instead:
-//
-// Anthropic (no free tier, ~$0.01/scan, strongest multi-item reads):
-//   provider: 'anthropic', baseUrl: 'https://api.anthropic.com',
-//   apiKey: 'sk-ant-...', model: 'claude-sonnet-4-6'
-//   (or 'claude-haiku-4-5-20251001' for cheaper)
-//
-// Self-hosted Odysseus, once you have it running:
-//   provider: 'odysseus', baseUrl: 'http://<your-machine-LAN-IP>:7000/v1',
-//   model: '<your loaded vision model>'
-// ---------------------------------------------------------------------------
-
-export const USDA_CONFIG = {
-  apiKey: 'rHSpCBJuu0xUI37Uopd1X1nUnfrSoiJ94LZ9y9sI',
-};
-
 export const DAILY_CALORIE_GOAL = 1900;
