@@ -172,12 +172,18 @@ export async function updateFoodEntry(id, updatedFields) {
       carbs: Math.round(roundedItems.reduce((acc, item) => acc + (Number(item.carbs) || 0), 0)),
       fat: Math.round(roundedItems.reduce((acc, item) => acc + (Number(item.fat) || 0), 0)),
     };
+    // Recalculate entry-level calories from updated item calories
+    const recalculatedCalories = Math.round(roundedItems.reduce((acc, item) => acc + (Number(item.calories) || 0), 0));
+    log[index].calories = recalculatedCalories;
+    // Sync totalCalories for HomeScreen/EntryRow compatibility
+    log[index].totalCalories = recalculatedCalories;
   }
 
   // Round entry-level calories and macros before persisting
   log[index] = {
     ...log[index],
     calories: Math.round(log[index].calories || 0),
+    totalCalories: Math.round(log[index].calories || 0),
     macros: log[index].macros ? {
       protein: Math.round(log[index].macros.protein || 0),
       carbs: Math.round(log[index].macros.carbs || 0),

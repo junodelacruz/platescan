@@ -19,5 +19,6 @@ The app UI layout has been updated to include a clean bottom tab bar navigation 
 
 ## Next steps
 
+- [x] Fixed PlateDetailScreen editing not reflecting on HomeScreen — added a minimal event bus (`src/services/eventBus.js`) so that `PlateDetailScreen` publishes a `plate-updated` event after saving/deleting, and `HomeScreen` subscribes to it and refreshes its entries immediately.
 - Run visual audits of the tab bar navigation transitions and check image load offsets.
 - Double-check SVG weight plot rendering with multiple custom entries.

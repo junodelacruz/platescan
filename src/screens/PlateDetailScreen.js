@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { deleteFoodEntry, updateFoodEntry, loadImage } from '../services/storageService';
 import { useTheme } from '../context/ThemeContext';
+import { publish } from '../services/eventBus';
 import BackButton from '../components/BackButton';
 
 // Legacy meal type badge colors — kept for the small badge UI only.
@@ -152,14 +153,19 @@ export default function PlateDetailScreen({ route, navigation }) {
 
     // Persist to storage
     await updateFoodEntry(currentEntry.id, { items: updated });
+    console.log('[PlateDetail] Published plate-updated event');
+    publish('plate-updated');
   };
 
   // Commit all changes (save button) — already persisted per-item, this is a no-op
   // keeping it for UI consistency if needed in future
 
   const handleDelete = async () => {
+    console.log('[PlateDetail] Deleting entry:', currentEntry.id);
     await deleteFoodEntry(currentEntry.id);
-    navigation.goBack();
+    console.log('[PlateDetail] Published plate-updated event (delete)');
+    publish('plate-updated');
+    setTimeout(() => navigation.goBack(), 100);
   };
 
   const handlePrevPlate = () => {
@@ -380,7 +386,7 @@ export default function PlateDetailScreen({ route, navigation }) {
                     borderColor: isEditing ? accentColor : colors.border,
                   }}
                 >
-                  {/* Row header: name + grams */}
+                  {/* Row header: name + calories */}
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Text
@@ -390,10 +396,17 @@ export default function PlateDetailScreen({ route, navigation }) {
                       >
                         {item.name || 'Unknown'}
                       </Text>
-                      {itemGrams != null && itemGrams > 0 && !isEditing && (
-                        <Text style={{ fontSize: 10, color: colors.inkMuted, fontFamily: FONT, marginTop: 1 }}>
-                          ~{Math.round(itemGrams)}g
-                        </Text>
+                      {!isEditing && (
+                        <>
+                          <Text style={{ fontSize: 10, color: colors.inkMuted, fontFamily: FONT, marginTop: 1 }}>
+                            {itemCalories} cal · P:{itemProtein}g · C:{itemCarbs}g · F:{itemFat}g
+                          </Text>
+                          {itemGrams != null && itemGrams > 0 && (
+                            <Text style={{ fontSize: 9, color: colors.inkMuted, fontFamily: FONT, marginTop: 1 }}>
+                              ~{Math.round(itemGrams)}g
+                            </Text>
+                          )}
+                        </>
                       )}
                     </View>
                     {!isEditing && (
@@ -418,14 +431,6 @@ export default function PlateDetailScreen({ route, navigation }) {
                     )}
                   </View>
 
-                  {/* Display mode: show totals */}
-                  {!isEditing && (
-                    <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 2 }}>
-                      <Text style={{ fontSize: 9, color: colors.inkMuted, fontFamily: FONT }}>
-                        {itemCalories} cal · P:{itemProtein}g C:{itemCarbs}g F:{itemFat}g
-                      </Text>
-                    </View>
-                  )}
 
                   {/* Edit mode: inline inputs */}
                   {isEditing && (

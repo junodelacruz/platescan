@@ -47,3 +47,9 @@
 - Emojis/unicode glyphs (`⊙`, `◫`, `⧖`, `◎`) serve as the main icons for Home, History, Weight, and Settings.
 - Inter font injected on web targets for consistent style.
 - Weight tracking logic persists logs locally in AsyncStorage under `weightLog`.
+
+## Task: Fix PlateDetailScreen → HomeScreen Edit Sync
+
+- [x] Created `src/services/eventBus.js` — minimal publish/subscribe module for cross-screen communication
+- [x] `HomeScreen.js` — subscribes to `'plate-updated'` event; on receipt, re-fetches entries from AsyncStorage and updates state
+- [x] `PlateDetailScreen.js` — publishes `'plate-updated'` after `updateFoodEntry()` (inline item save) and `deleteFoodEntry()` (plate delete)

@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { View, Text, FlatList, TouchableOpacity, SafeAreaView, Image, Modal, TouchableWithoutFeedback, Platform } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import PlateRing from '../components/PlateRing';
 import { getFoodLog, getCalorieGoal, loadImage } from '../services/storageService';
+import { subscribe } from '../services/eventBus';
 import { useTheme } from '../context/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -48,9 +49,24 @@ export default function HomeScreen({ navigation }) {
   
   // Selected date management (defaults to today)
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const selectedDateRef = useRef(selectedDate);
+  useEffect(() => { selectedDateRef.current = selectedDate; }, [selectedDate]);
   const [allEntries, setAllEntries] = useState([]);
   const [goal, setGoal] = useState(2000);
   const [dropdownVisible, setDropdownVisible] = useState(false);
+
+  // Subscribe to cross-screen edit updates so HomeScreen refreshes
+  // when the user saves changes from PlateDetailScreen
+  useEffect(() => {
+    console.log('[HomeScreen] Subscribing to plate-updated event');
+    return subscribe('plate-updated', () => {
+      console.log('[HomeScreen] Received plate-updated event, re-fetching...');
+      getFoodLog().then(log => {
+        console.log('[HomeScreen] Fetched', log.length, 'entries, updating state');
+        setAllEntries(log);
+      }).catch(err => console.error('[HomeScreen] Error fetching:', err));
+    });
+  }, []);
 
   const refresh = useCallback(async () => {
     const log = await getFoodLog();
@@ -60,7 +76,10 @@ export default function HomeScreen({ navigation }) {
   useFocusEffect(
     useCallback(() => {
       AsyncStorage.setItem('platescan-selected-date', selectedDate.toISOString());
-      Promise.all([refresh(), getCalorieGoal().then(g => setGoal(g))]);
+      Promise.all([
+        refresh(),
+        getCalorieGoal().then(g => setGoal(g)),
+      ]);
     }, [refresh, selectedDate])
   );
 
