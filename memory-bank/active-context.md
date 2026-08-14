@@ -14,11 +14,12 @@ The app UI layout has been updated to include a clean bottom tab bar navigation 
   - Configured font styles to inherit `'Inter'` and toned down bold weights.
   - Updated meal badge elements to utilize `hexToRgba` colored borders and transparency.
 - **`src/screens/PlateDetailScreen.js`**: Replaced solid delete buttons, updated header/image frame padding, customized macro columns with accent color guidelines, and updated typography weight.
-- **`src/screens/SettingsScreen.js`**: Redesigned goal updates into modular sections (Appearance and Nutrition) and applied success button check indicators.
+- **`src/screens/SettingsScreen.js`**: Redesigned goal updates into modular sections (Appearance and Nutrition) and applied success button check indicators. Added "Export My Data" button that triggers a full app data JSON download.
 - **`src/components/PlateRing.js`**: Changed the central numeric tracker's fontWeight to `'200'`.
 
 ## Next steps
 
+- [x] Added "Export My Data" feature — Settings button that exports all app data (food log, calorie goal, weight log, images) as a downloadable JSON file via `src/services/exportService.js`.
 - [x] Fixed PlateDetailScreen editing not reflecting on HomeScreen — added a minimal event bus (`src/services/eventBus.js`) so that `PlateDetailScreen` publishes a `plate-updated` event after saving/deleting, and `HomeScreen` subscribes to it and refreshes its entries immediately.
 - Run visual audits of the tab bar navigation transitions and check image load offsets.
 - Double-check SVG weight plot rendering with multiple custom entries.

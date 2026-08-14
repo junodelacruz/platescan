@@ -53,3 +53,16 @@
 - [x] Created `src/services/eventBus.js` — minimal publish/subscribe module for cross-screen communication
 - [x] `HomeScreen.js` — subscribes to `'plate-updated'` event; on receipt, re-fetches entries from AsyncStorage and updates state
 - [x] `PlateDetailScreen.js` — publishes `'plate-updated'` after `updateFoodEntry()` (inline item save) and `deleteFoodEntry()` (plate delete)
+
+## Task: Add Removable "Export Data" Feature
+
+- [x] Created `src/services/exportService.js` — encapsulates all export logic (`getExportData()` + `triggerExport()`)
+  - Reads foodLog, calorieGoal, weightLog from AsyncStorage
+  - Reads all image blobs from IndexedDB `platescan-images`
+  - Returns structured JSON object with `exportedAt`, `plates`, `settings`, `weights`, `images`
+  - Triggers file download via `Blob` + `<a download>` element
+- [x] Added "Export My Data" button to `src/screens/SettingsScreen.js`
+  - Styled consistently with the Save Goal button (tomato color, same layout)
+  - Shows "✓ Exported" success feedback for 2 seconds
+  - Error handling: sets error message on failure
+- Removal plan: delete `exportService.js` and the button block from SettingsScreen — no other files reference them

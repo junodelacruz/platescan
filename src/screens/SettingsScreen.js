@@ -9,6 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { getCalorieGoal, setCalorieGoal } from '../services/storageService';
+import { triggerExport, getExportData } from '../services/exportService';
 import { useTheme } from '../context/ThemeContext';
 import BackButton from '../components/BackButton';
 
@@ -26,6 +27,7 @@ export default function SettingsScreen({ navigation }) {
   const [goalInput, setGoalInput] = useState('');
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+  const [exported, setExported] = useState(false);
 
   useEffect(() => {
     getCalorieGoal().then((g) => setGoalInput(g.toString()));
@@ -41,6 +43,18 @@ export default function SettingsScreen({ navigation }) {
     await setCalorieGoal(parsed);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleExport = async () => {
+    try {
+      const data = await getExportData();
+      triggerExport(data);
+      setExported(true);
+      setTimeout(() => setExported(false), 2000);
+    } catch (err) {
+      setError('Export failed. Please try again.');
+      console.error('export failed:', err);
+    }
   };
 
   // Reusable section card style
@@ -188,6 +202,30 @@ export default function SettingsScreen({ navigation }) {
             letterSpacing: 0.3,
           }}>
             {saved ? '✓ Saved' : 'Save Goal'}
+          </Text>
+        </TouchableOpacity>
+
+        {/* Export button */}
+        <TouchableOpacity
+          style={{
+            marginTop: 8,
+            backgroundColor: exported ? hexToRgba('#4E7C62', 0.15) : colors.tomato,
+            borderRadius: 16,
+            paddingVertical: 16,
+            alignItems: 'center',
+            borderWidth: exported ? 1 : 0,
+            borderColor: exported ? '#4E7C62' : 'transparent',
+          }}
+          onPress={handleExport}
+        >
+          <Text style={{
+            fontSize: 15,
+            fontWeight: '500',
+            fontFamily: FONT,
+            color: exported ? '#4E7C62' : colors.background,
+            letterSpacing: 0.3,
+          }}>
+            {exported ? '✓ Exported' : 'Export My Data'}
           </Text>
         </TouchableOpacity>
 
