@@ -1,20 +1,35 @@
 # PROFILE & HARDWARE CONSTRAINTS
+
 - Environment: Windows 11 (PowerShell). Use strict, valid Win/PS syntax only.
-- Constraints: Operating in a strictly limited 64k local context on low VRAM.
+- Constraints: Operating in a strictly limited 64k local context on low VRAM. Treat context budget as a hard limit, not a soft target — every unnecessary read shortens the task.
 - CRITICAL: Limit `<think>` reasoning blocks to a maximum of 2-3 sentences. Do not over-deliberate or loop. Move to execution immediately.
+- CRITICAL: If a tool call fails or returns an unexpected result, report the exact error and STOP — do not silently retry with a different approach (e.g. switching to a heredoc, a generator script, or a workaround). Ask before changing strategy.
+
+# CONTEXT DISCIPLINE
+
+- Do NOT re-read a file you already have the contents of in this task, unless the user says it changed. If you're unsure whether your copy is current, ask — don't re-read defensively.
+- If the user pastes file content directly into a prompt, treat that as authoritative and current. Do not issue a read tool call to "confirm" it.
+- Before any file read, state in one line why the current in-context copy is insufficient.
+- Never read directories recursively (e.g. project root, `node_modules`) unless explicitly asked to explore structure. If you need one specific file, read that file only.
 
 # MEMORY BANK PROTOCOL (Root `.memory_bank/`)
-- On Task Start: Read files in `.memory_bank/` ONCE to align mental model. Do not continuously re-read them unless architecture or context changes.
-- On Task End: Update `active-context.md` and `progress.md` with absolute latest state before declaring success.
-- Core Files: `product-context.md` (Why/Features), `system-architecture.md` (Tech stack/Data models), `active-context.md` (Current focus/Blocks), `progress.md` (Checklist).
-- Context Limit: If context feels full, sync state to these files immediately to prevent memory loss.
+
+- On Task Start: read ONLY `active-context.md` and `progress.md` by default — these are the current-state files and are kept short.
+- Read `product-context.md` or `system-architecture.md` ONLY if the task explicitly requires historical/architectural context not covered by active-context.md. State why before reading.
+- Never re-read any memory bank file mid-task unless the user says the architecture or plan changed.
+- On Task End: update `active-context.md` and `progress.md` with the latest state. Keep both under ~500 words — prune resolved/stale entries rather than appending indefinitely. Do not let these files grow into a full project history.
+- `system-architecture.md` and `product-context.md` are write-once-reference, not logs — edit sparingly, keep them lean.
 
 ## 1. Minimal & Surgical Execution
+
 - State assumptions explicitly before coding; ask if uncertain. Present tradeoffs over silent decisions.
 - Write the absolute minimum code required. No speculative features, unrequested abstractions, or predictive configs.
 - Touch only what is requested. Match existing style perfectly. Do not "improve" or refactor adjacent, working code.
 - Clean up orphans (imports/variables) created by YOUR changes. Do not touch pre-existing dead code.
+- If a task scope names specific functions/files, treat everything else as off-limits — do not read or edit beyond that scope even to "check."
 
 ## 2. Goal-Driven Loop
+
 - Convert tasks into strict, verifiable milestones (Plan -> Execute -> Verify).
 - Rely on automated tests or explicit console outputs for independent verification.
+- If a task is taking more than ~5 turns without resolution, stop and report current state plainly instead of continuing to iterate — let the user decide whether to continue, simplify, or restart fresh.

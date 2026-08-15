@@ -5,47 +5,97 @@ const GOAL_KEY = 'calorieGoal';
 const DEFAULT_GOAL = 2000;
 const API_BASE = 'http://100.98.211.95:3001';
 
-// ── IndexedDB image store ──
-const DB_NAME = 'platescan-images';
-const DB_STORE = 'images';
-
-function openImageDB() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1);
-    req.onupgradeneeded = (e) => e.target.result.createObjectStore(DB_STORE, { keyPath: 'id' });
-    req.onsuccess = (e) => resolve(e.target.result);
-    req.onerror = (e) => reject(e.target.error);
-  });
-}
+// ── Image functions — API-backed (replaces IndexedDB) ──
 
 export async function saveImage(entryId, base64DataUri) {
-  const db = await openImageDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(DB_STORE, 'readwrite');
-    tx.objectStore(DB_STORE).put({ id: String(entryId), data: base64DataUri });
-    tx.oncomplete = resolve;
-    tx.onerror = (e) => reject(e.target.error);
-  });
+  // NEW - Upload image file via POST /plates/:id/image (multipart/form-data)
+  try {
+    // Convert data URI to Blob: "data:image/jpeg;base64,..." → Blob
+    const byteString = atob(base64DataUri.split(',')[1]);
+    const mimeMatch = base64DataUri.match(/^data:(.*);/);
+    const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+    const blob = new Blob([ab], { type: mimeType });
+
+    const formData = new FormData();
+    formData.append('image', blob, 'plate.jpg');
+
+    const res = await fetch(`${API_BASE}/plates/${entryId}/image`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!res.ok) {
+      throw new Error(`saveImage POST /plates/${entryId}/image failed: ${res.status}`);
+    }
+
+    return await res.json();
+  } catch (err) {
+    console.warn('saveImage API upload failed:', err);
+    throw err;
+  }
+  // OLD - IndexedDB version, kept for rollback
+  // const db = await openImageDB();
+  // return new Promise((resolve, reject) => {
+  //   const tx = db.transaction(DB_STORE, 'readwrite');
+  //   tx.objectStore(DB_STORE).put({ id: String(entryId), data: base64DataUri });
+  //   tx.oncomplete = resolve;
+  //   tx.onerror = (e) => reject(e.target.error);
+  // });
 }
 
 export async function loadImage(entryId) {
-  const db = await openImageDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(DB_STORE, 'readonly');
-    const req = tx.objectStore(DB_STORE).get(String(entryId));
-    req.onsuccess = (e) => resolve(e.target.result?.data ?? null);
-    req.onerror = (e) => reject(e.target.error);
-  });
+  // NEW - Fetch plate from API and return static image URL
+  try {
+    const res = await fetch(`${API_BASE}/plates/${entryId}`);
+    if (!res.ok) {
+      return null;
+    }
+    const plate = await res.json();
+    if (!plate.image_filename) {
+      return null;
+    }
+    return `${API_BASE}/images/${plate.image_filename}`;
+  } catch (err) {
+    console.warn('loadImage fetch failed:', err);
+    return null;
+  }
+  // OLD - IndexedDB version, kept for rollback
+  // const db = await openImageDB();
+  // return new Promise((resolve, reject) => {
+  //   const tx = db.transaction(DB_STORE, 'readonly');
+  //   const req = tx.objectStore(DB_STORE).get(String(entryId));
+  //   req.onsuccess = (e) => resolve(e.target.result?.data ?? null);
+  //   req.onerror = (e) => reject(e.target.error);
+  // });
 }
 
 export async function deleteImage(entryId) {
-  const db = await openImageDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(DB_STORE, 'readwrite');
-    tx.objectStore(DB_STORE).delete(String(entryId));
-    tx.oncomplete = resolve;
-    tx.onerror = (e) => reject(e.target.error);
-  });
+  // NEW - Delete image via DELETE /plates/:id/image
+  try {
+    const res = await fetch(`${API_BASE}/plates/${entryId}/image`, {
+      method: 'DELETE',
+    });
+    if (!res.ok && res.status !== 204) {
+      throw new Error(`deleteImage DELETE /plates/${entryId}/image failed: ${res.status}`);
+    }
+    return;
+  } catch (err) {
+    console.warn('deleteImage API failed:', err);
+    throw err;
+  }
+  // OLD - IndexedDB version, kept for rollback
+  // const db = await openImageDB();
+  // return new Promise((resolve, reject) => {
+  //   const tx = db.transaction(DB_STORE, 'readwrite');
+  //   tx.objectStore(DB_STORE).delete(String(entryId));
+  //   tx.oncomplete = resolve;
+  //   tx.onerror = (e) => reject(e.target.error);
+  // });
 }
 
 export async function getCalorieGoal() {
@@ -113,13 +163,13 @@ export async function addFoodEntry(entry) {
     items: roundedItems,
   };
 
-  // Part B: Save image to IndexedDB locally (keep existing behavior)
+  // Part B: Upload image to API server (replaces IndexedDB storage)
   try {
     if (updatedEntry.imageUri && updatedEntry.imageUri.startsWith('data:')) {
       await saveImage(updatedEntry.id, updatedEntry.imageUri);
     }
   } catch (err) {
-    console.warn('saveImage to IndexedDB failed (non-fatal):', err);
+    console.warn('saveImage upload failed (non-fatal):', err);
   }
 
   try {
@@ -147,7 +197,7 @@ export async function addFoodEntry(entry) {
 }
 
 export async function deleteFoodEntry(id) {
-  // Part C: Also delete image from IndexedDB (keep existing behavior)
+  // Part C: Also delete image from API server (replaces IndexedDB)
   try {
     await deleteImage(id);
   } catch (err) {
