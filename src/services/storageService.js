@@ -98,12 +98,57 @@ export async function deleteImage(entryId) {
   // });
 }
 
+// ── Weight functions — API-backed (POST /weight, GET /weight) ──
+
+export async function saveWeight({ date, weight }) {
+  // API accepts { weight, timestamp } — convert date to ms timestamp
+  const timestamp = date ? new Date(date).getTime() : Date.now();
+  try {
+    const res = await fetch(`${API_BASE}/weight`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ weight, timestamp }),
+    });
+    if (!res.ok) {
+      throw new Error(`saveWeight POST /weight failed: ${res.status}`);
+    }
+    return await res.json();
+  } catch (err) {
+    console.warn('saveWeight API upload failed:', err);
+    throw err;
+  }
+}
+
+export async function getWeights() {
+  // Returns array of { id, timestamp, weight } from API
+  try {
+    const res = await fetch(`${API_BASE}/weight`);
+    if (!res.ok) {
+      throw new Error(`getWeights GET /weight failed: ${res.status}`);
+    }
+    const data = await res.json();
+    return data || [];
+  } catch (err) {
+    console.warn('getWeights fetch failed:', err);
+    throw err;
+  }
+  // OLD - AsyncStorage version, kept for rollback
+  // const raw = await AsyncStorage.getItem('weightLog');
+  // return raw ? JSON.parse(raw) : [];
+}
+
+// ── Settings / Calorie Goal functions — AsyncStorage-only (no /settings endpoint on server) ──
+
 export async function getCalorieGoal() {
+  // NOTE: No /settings endpoint exists on the API server (confirmed: GET /settings → 404).
+  // Leaving as AsyncStorage-only for now. If an endpoint is added later, replace with fetch.
   const raw = await AsyncStorage.getItem(GOAL_KEY);
   return raw ? parseInt(raw, 10) : DEFAULT_GOAL;
 }
 
 export async function setCalorieGoal(goal) {
+  // NOTE: No /settings endpoint exists on the API server (confirmed: GET /settings → 404).
+  // Leaving as AsyncStorage-only for now.
   await AsyncStorage.setItem(GOAL_KEY, goal.toString());
 }
 
