@@ -89,7 +89,12 @@ export default function HomeScreen({ navigation }) {
     (e) => formatDateKey(new Date(e.timestamp)) === targetDateStr
   );
 
-  const totalCalories = dayEntries.reduce((sum, e) => sum + (e.totalCalories || 0), 0);
+  console.log('[DEBUG] allEntries.length:', allEntries.length);
+  console.log('[DEBUG] targetDateStr:', targetDateStr);
+  console.log('[DEBUG] entry dates:', allEntries.map(e => formatDateKey(new Date(e.timestamp))));
+  console.log('[DEBUG] dayEntries.length:', dayEntries.length);
+
+  const totalCalories = dayEntries.reduce((sum, e) => sum + (e.total_calories || 0), 0);
   const totalProtein = Math.round(dayEntries.reduce((s, e) => s + (e.items?.reduce((si, i) => si + (Number(i.protein) || 0), 0) ?? 0), 0));
   const totalCarbs = Math.round(dayEntries.reduce((s, e) => s + (e.items?.reduce((si, i) => si + (Number(i.carbs) || 0), 0) ?? 0), 0));
   const totalFat = Math.round(dayEntries.reduce((s, e) => s + (e.items?.reduce((si, i) => si + (Number(i.fat) || 0), 0) ?? 0), 0));
