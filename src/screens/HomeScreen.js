@@ -415,7 +415,7 @@ function EntryRow({ item, index, entries, navigation }) {
 
   const contentStyle = { flex: 1, paddingLeft: 12, justifyContent: 'center' };
 
-  const mealColor = MEAL_TYPE_COLORS[item.mealType];
+  const mealColor = MEAL_TYPE_COLORS[item.meal_type];
   const badgeStyle = {
     alignSelf: 'flex-start',
     borderRadius: 20,
@@ -456,17 +456,17 @@ function EntryRow({ item, index, entries, navigation }) {
         </Text>
 
         {/* Meal type badge */}
-        {item.mealType ? (
+        {item.meal_type ? (
           <View style={badgeStyle}>
             <Text style={{ fontSize: 10, fontWeight: '500', color: mealColor, textTransform: 'uppercase', letterSpacing: 0.6, fontFamily: FONT }}>
-              {item.mealType}
+              {item.meal_type}
             </Text>
           </View>
         ) : null}
 
         {/* Calorie count */}
-        <Text style={{ fontSize: 14, color: colors.inkMuted, marginTop: item.mealType ? 0 : 4 }}>
-          {item.totalCalories} kcal
+        <Text style={{ fontSize: 14, color: colors.inkMuted, marginTop: item.meal_type ? 0 : 4 }}>
+          {item.total_calories} kcal
         </Text>
 
         {/* Macro row */}
