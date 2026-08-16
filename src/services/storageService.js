@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const LOG_KEY = 'foodLog';
 const GOAL_KEY = 'calorieGoal';
 const DEFAULT_GOAL = 2000;
-const API_BASE = 'http://100.98.211.95:3001';
+const API_BASE = 'https://platescan.duckdns.org/api';
 
 // ── Image functions — API-backed (replaces IndexedDB) ──
 
