@@ -168,8 +168,39 @@ export async function getFoodLog() {
 }
 
 export async function addFoodEntry(entry) {
-  // ... (all the rounding/macro logic stays exactly the same) ...
+  // Round item-level macros and calories before sending to API
+  const roundedItems = (entry.items || []).map(item => ({
+    ...item,
+    calories: Math.round(item.calories || 0),
+    protein: Math.round(item.protein || 0),
+    carbs: Math.round(item.carbs || 0),
+    fat: Math.round(item.fat || 0),
+  }));
 
+  // Aggregate macros from items if not already present on the entry
+  const macros = entry.macros
+    ? {
+        protein: Math.round(entry.macros.protein || 0),
+        carbs: Math.round(entry.macros.carbs || 0),
+        fat: Math.round(entry.macros.fat || 0),
+      }
+    : roundedItems.length > 0
+      ? roundedItems.reduce(
+        (acc, item) => ({
+          protein: (acc.protein || 0) + (Number(item.protein) || 0),
+          carbs: (acc.carbs || 0) + (Number(item.carbs) || 0),
+          fat: (acc.fat || 0) + (Number(item.fat) || 0),
+        }),
+        { protein: 0, carbs: 0, fat: 0 }
+      )
+      : { protein: 0, carbs: 0, fat: 0 };
+
+  // Round macros and entry-level calories
+  const roundedMacros = {
+    protein: Math.round(macros.protein || 0),
+    carbs: Math.round(macros.carbs || 0),
+    fat: Math.round(macros.fat || 0),
+  };
   const updatedEntry = {
     ...entry,
     macros: roundedMacros,
@@ -178,12 +209,16 @@ export async function addFoodEntry(entry) {
   };
 
   // Create the plate row FIRST — image upload requires the row to already exist
+// Build the payload for the JSON POST — omit imageUri, it goes via multipart upload instead
+  const { imageUri, ...entryForApi } = updatedEntry;
+
+  // Create the plate row FIRST — image upload requires the row to already exist
   let created;
   try {
     const res = await fetch(`${API_BASE}/plates`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatedEntry),
+      body: JSON.stringify(entryForApi),
     });
     if (!res.ok) {
       throw new Error(`addFoodEntry POST failed: ${res.status}`);
