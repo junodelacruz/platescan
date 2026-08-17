@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { View, Text, FlatList, TouchableOpacity, SafeAreaView, Image, Modal, TouchableWithoutFeedback, Platform } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import PlateRing from '../components/PlateRing';
-import { getFoodLog, getCalorieGoal, loadImage } from '../services/storageService';
+import { getFoodLog, getCalorieGoal, loadImage, loadThumbUrl } from '../services/storageService';
 import { subscribe } from '../services/eventBus';
 import { useTheme } from '../context/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -378,7 +378,7 @@ function EntryRow({ item, index, entries, navigation }) {
 
   useEffect(() => {
     let cancelled = false;
-    loadImage(item.id).then(uri => {
+    loadThumbUrl(item.id).then(uri => {
       if (!cancelled) setImageUri(uri);
     }).catch(() => {});
     return () => { cancelled = true; };

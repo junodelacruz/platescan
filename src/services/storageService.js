@@ -49,7 +49,7 @@ export async function saveImage(entryId, base64DataUri) {
 }
 
 export async function loadImage(entryId) {
-  // NEW - Fetch plate from API and return static image URL
+  // NEW - Fetch plate from API and return static image URL (full-size)
   try {
     const res = await fetch(`${API_BASE}/plates/${entryId}`);
     if (!res.ok) {
@@ -72,6 +72,24 @@ export async function loadImage(entryId) {
   //   req.onsuccess = (e) => resolve(e.target.result?.data ?? null);
   //   req.onerror = (e) => reject(e.target.error);
   // });
+}
+
+export async function loadThumbUrl(entryId) {
+  // Fetch plate from API and return thumbnail URL
+  try {
+    const res = await fetch(`${API_BASE}/plates/${entryId}`);
+    if (!res.ok) {
+      return null;
+    }
+    const plate = await res.json();
+    if (!plate.image_filename) {
+      return null;
+    }
+    return `${API_BASE}/images/thumb/${plate.image_filename}`;
+  } catch (err) {
+    console.warn('loadThumbUrl fetch failed:', err);
+    return null;
+  }
 }
 
 export async function deleteImage(entryId) {
