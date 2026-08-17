@@ -108,7 +108,7 @@ function MealEntryRow({ entry, entries = [], navigation }) {
           </View>
         ) : null}
         <Text style={{ fontSize: 13, color: colors.inkMuted }}>
-          {entry.totalCalories} kcal
+          {entry.total_calories} kcal
         </Text>
         <Text style={{ fontSize: 11, marginTop: 2 }}>
           <Text style={{ color: colors.tomato }}>{pVal}g P</Text>
@@ -271,7 +271,7 @@ export default function HistoryScreen({ navigation }) {
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
   const selectedEntries = entriesByDay[selectedKey] || [];
-  const selectedTotal = selectedEntries.reduce((s, e) => s + (e.totalCalories || 0), 0);
+  const selectedTotal = selectedEntries.reduce((s, e) => s + (e.total_calories || 0), 0);
   const selectedProtein = Math.round(selectedEntries.reduce((s, e) => s + (e.macros?.protein ?? e.items?.reduce((si, i) => si + (Number(i.protein) || 0), 0) ?? 0), 0));
   const selectedCarbs = Math.round(selectedEntries.reduce((s, e) => s + (e.macros?.carbs ?? e.items?.reduce((si, i) => si + (Number(i.carbs) || 0), 0) ?? 0), 0));
   const selectedFat = Math.round(selectedEntries.reduce((s, e) => s + (e.macros?.fat ?? e.items?.reduce((si, i) => si + (Number(i.fat) || 0), 0) ?? 0), 0));
