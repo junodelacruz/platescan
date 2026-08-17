@@ -11,6 +11,7 @@ import {
 import { getCalorieGoal, setCalorieGoal } from '../services/storageService';
 import { triggerExport, getExportData } from '../services/exportService';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import BackButton from '../components/BackButton';
 
 const FONT = Platform.OS === 'web' ? 'Inter, system-ui, sans-serif' : undefined;
@@ -24,6 +25,7 @@ function hexToRgba(hex, alpha) {
 
 export default function SettingsScreen({ navigation }) {
   const { colors, isDark, toggleTheme } = useTheme();
+  const { logOut } = useAuth();
   const [goalInput, setGoalInput] = useState('');
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
@@ -226,6 +228,31 @@ export default function SettingsScreen({ navigation }) {
             letterSpacing: 0.3,
           }}>
             {exported ? '✓ Exported' : 'Export My Data'}
+          </Text>
+        </TouchableOpacity>
+
+        {/* Sign Out button */}
+        <TouchableOpacity
+          style={{
+            marginTop: 24,
+            backgroundColor: 'transparent',
+            borderRadius: 16,
+            paddingVertical: 16,
+            alignItems: 'center',
+            borderWidth: 1,
+            borderColor: colors.border,
+          }}
+          onPress={logOut}
+          activeOpacity={0.7}
+        >
+          <Text style={{
+            fontSize: 15,
+            fontWeight: '500',
+            fontFamily: FONT,
+            color: colors.inkMuted,
+            letterSpacing: 0.3,
+          }}>
+            Sign Out
           </Text>
         </TouchableOpacity>
 

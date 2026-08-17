@@ -1,9 +1,34 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getToken, clearToken } from './authService';
+import { publish } from './eventBus';
 
 const LOG_KEY = 'foodLog';
 const GOAL_KEY = 'calorieGoal';
 const DEFAULT_GOAL = 2000;
 const API_BASE = 'https://platescan.duckdns.org/api';
+
+// ── Auth-aware fetch wrapper ──────────────────────────────────────────────
+//
+// Every API call goes through apiFetch so the JWT is injected in one place.
+// If the server returns 401 (expired / invalid token), the token is cleared
+// and a 'logout' event is published so AuthContext can navigate to Login.
+
+async function apiFetch(url, options = {}) {
+  const token = await getToken();
+  const headers = {
+    ...(options.headers || {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+
+  const res = await fetch(url, { ...options, headers });
+
+  if (res.status === 401) {
+    await clearToken();
+    publish('logout');
+  }
+
+  return res;
+}
 
 // ── Image functions — API-backed (replaces IndexedDB) ──
 
@@ -24,7 +49,7 @@ export async function saveImage(entryId, base64DataUri) {
     const formData = new FormData();
     formData.append('image', blob, 'plate.jpg');
 
-    const res = await fetch(`${API_BASE}/plates/${entryId}/image`, {
+    const res = await apiFetch(`${API_BASE}/plates/${entryId}/image`, {
       method: 'POST',
       body: formData,
     });
@@ -51,7 +76,7 @@ export async function saveImage(entryId, base64DataUri) {
 export async function loadImage(entryId) {
   // NEW - Fetch plate from API and return static image URL (full-size)
   try {
-    const res = await fetch(`${API_BASE}/plates/${entryId}`);
+    const res = await apiFetch(`${API_BASE}/plates/${entryId}`);
     if (!res.ok) {
       return null;
     }
@@ -59,7 +84,11 @@ export async function loadImage(entryId) {
     if (!plate.image_filename) {
       return null;
     }
-    return `${API_BASE}/images/${plate.image_filename}`;
+    // Append ?token= so <Image> on web (rendered as <img>) can authenticate
+    // without sending an Authorization header, which browsers block on <img>.
+    const token = await getToken();
+    const qs = token ? `?token=${encodeURIComponent(token)}` : '';
+    return `${API_BASE}/images/${plate.image_filename}${qs}`;
   } catch (err) {
     console.warn('loadImage fetch failed:', err);
     return null;
@@ -77,7 +106,7 @@ export async function loadImage(entryId) {
 export async function loadThumbUrl(entryId) {
   // Fetch plate from API and return thumbnail URL
   try {
-    const res = await fetch(`${API_BASE}/plates/${entryId}`);
+    const res = await apiFetch(`${API_BASE}/plates/${entryId}`);
     if (!res.ok) {
       return null;
     }
@@ -85,7 +114,11 @@ export async function loadThumbUrl(entryId) {
     if (!plate.image_filename) {
       return null;
     }
-    return `${API_BASE}/images/thumb/${plate.image_filename}`;
+    // Append ?token= so <Image> on web (rendered as <img>) can authenticate
+    // without sending an Authorization header, which browsers block on <img>.
+    const token = await getToken();
+    const qs = token ? `?token=${encodeURIComponent(token)}` : '';
+    return `${API_BASE}/images/thumb/${plate.image_filename}${qs}`;
   } catch (err) {
     console.warn('loadThumbUrl fetch failed:', err);
     return null;
@@ -95,7 +128,7 @@ export async function loadThumbUrl(entryId) {
 export async function deleteImage(entryId) {
   // NEW - Delete image via DELETE /plates/:id/image
   try {
-    const res = await fetch(`${API_BASE}/plates/${entryId}/image`, {
+    const res = await apiFetch(`${API_BASE}/plates/${entryId}/image`, {
       method: 'DELETE',
     });
     if (!res.ok && res.status !== 204) {
@@ -122,7 +155,7 @@ export async function saveWeight({ date, weight }) {
   // API accepts { weight, timestamp } — convert date to ms timestamp
   const timestamp = date ? new Date(date).getTime() : Date.now();
   try {
-    const res = await fetch(`${API_BASE}/weight`, {
+    const res = await apiFetch(`${API_BASE}/weight`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ weight, timestamp }),
@@ -140,7 +173,7 @@ export async function saveWeight({ date, weight }) {
 export async function getWeights() {
   // Returns array of { id, timestamp, weight } from API
   try {
-    const res = await fetch(`${API_BASE}/weight`);
+    const res = await apiFetch(`${API_BASE}/weight`);
     if (!res.ok) {
       throw new Error(`getWeights GET /weight failed: ${res.status}`);
     }
@@ -172,7 +205,7 @@ export async function setCalorieGoal(goal) {
 
 export async function getFoodLog() {
   try {
-    const res = await fetch(`${API_BASE}/plates`);
+    const res = await apiFetch(`${API_BASE}/plates`);
     if (!res.ok) return [];
     const data = await res.json();
     return data || [];
@@ -233,7 +266,7 @@ export async function addFoodEntry(entry) {
   // Create the plate row FIRST — image upload requires the row to already exist
   let created;
   try {
-    const res = await fetch(`${API_BASE}/plates`, {
+    const res = await apiFetch(`${API_BASE}/plates`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(entryForApi),
@@ -268,14 +301,14 @@ export async function deleteFoodEntry(id) {
   }
 
   try {
-    const res = await fetch(`${API_BASE}/plates/${id}`, {
+    const res = await apiFetch(`${API_BASE}/plates/${id}`, {
       method: 'DELETE',
     });
     if (!res.ok) {
       throw new Error(`deleteFoodEntry DELETE failed: ${res.status}`);
     }
     // Return updated list from server
-    const listRes = await fetch(`${API_BASE}/plates`);
+    const listRes = await apiFetch(`${API_BASE}/plates`);
     if (!listRes.ok) return [];
     return await listRes.json();
   } catch (err) {
@@ -345,7 +378,7 @@ export async function updateFoodEntry(id, updatedFields) {
   }
 
   try {
-    const res = await fetch(`${API_BASE}/plates/${id}`, {
+    const res = await apiFetch(`${API_BASE}/plates/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(patch),

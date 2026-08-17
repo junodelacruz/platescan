@@ -1,15 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   SafeAreaView, ScrollView, Platform,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Svg, { Polyline, Line, Circle, Text as SvgText } from 'react-native-svg';
 import { useTheme } from '../context/ThemeContext';
 import { useFocusEffect } from '@react-navigation/native';
+import { getWeights, saveWeight } from '../services/storageService';
 
 const FONT = Platform.OS === 'web' ? 'Inter, system-ui, sans-serif' : undefined;
-const WEIGHT_KEY = 'weightLog';
 
 function hexToRgba(hex, alpha) {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -21,21 +20,6 @@ function hexToRgba(hex, alpha) {
 function todayKey() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-async function loadWeightLog() {
-  const raw = await AsyncStorage.getItem(WEIGHT_KEY);
-  return raw ? JSON.parse(raw) : [];
-}
-
-async function saveWeightEntry(date, weight) {
-  const log = await loadWeightLog();
-  const existing = log.findIndex(e => e.date === date);
-  if (existing >= 0) log[existing].weight = weight;
-  else log.push({ date, weight });
-  log.sort((a, b) => a.date.localeCompare(b.date));
-  await AsyncStorage.setItem(WEIGHT_KEY, JSON.stringify(log));
-  return log;
 }
 
 // ── SVG Line Chart ────────────────────────────────────────────────────────────
@@ -124,11 +108,22 @@ export default function WeightTrackerScreen() {
   const [range, setRange] = useState(30); // 7, 30, 90
 
   const refresh = useCallback(async () => {
-    const data = await loadWeightLog();
-    setLog(data);
-    // Pre-fill today's input if already logged
-    const today = data.find(e => e.date === todayKey());
-    if (today) setInputValue(String(today.weight));
+    try {
+      const apiData = await getWeights();
+      // Convert API entries { id, timestamp, weight } → { date: 'YYYY-MM-DD', weight }
+      const entries = apiData.map(item => ({
+        date: new Date(item.timestamp).toISOString().slice(0, 10),
+        weight: item.weight,
+      }));
+      entries.sort((a, b) => a.date.localeCompare(b.date));
+      setLog(entries);
+      // Pre-fill today's input if already logged
+      const today = entries.find(e => e.date === todayKey());
+      if (today) setInputValue(String(today.weight));
+    } catch (err) {
+      console.warn('refresh weight data failed:', err);
+      // Leave existing state intact — don't blank the screen
+    }
   }, []);
 
   useFocusEffect(useCallback(() => { refresh(); }, [refresh]));
@@ -136,10 +131,15 @@ export default function WeightTrackerScreen() {
   const handleLog = async () => {
     const num = parseFloat(inputValue);
     if (isNaN(num) || num < 50 || num > 700) return;
-    const updated = await saveWeightEntry(todayKey(), num);
-    setLog(updated);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    try {
+      await saveWeight({ date: todayKey(), weight: num });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+      // Reload canonical list from server
+      await refresh();
+    } catch (err) {
+      console.warn('saveWeight failed:', err);
+    }
   };
 
   // Filter by range

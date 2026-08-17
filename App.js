@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 import React, { useEffect } from 'react';
-import { View, Platform, StyleSheet } from 'react-native';
+import { View, Platform, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -13,8 +13,10 @@ import HistoryScreen from './src/screens/HistoryScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import PlateDetailScreen from './src/screens/PlateDetailScreen';
 import WeightTrackerScreen from './src/screens/WeightTrackerScreen';
+import LoginScreen from './src/screens/LoginScreen';
 import { clearLegacyData } from './src/services/storageService';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
+import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const Stack = createNativeStackNavigator();
@@ -91,6 +93,16 @@ const styles = StyleSheet.create({
 
 function AppNavigator() {
   const { colors, isDark } = useTheme();
+  const { isAuthChecked, isLoggedIn } = useAuth();
+
+  // Splash: wait for AsyncStorage read before deciding which screen to show
+  if (!isAuthChecked) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={colors.tomato} />
+      </View>
+    );
+  }
 
   return (
     <NavigationContainer>
@@ -101,12 +113,26 @@ function AppNavigator() {
           contentStyle: { backgroundColor: colors.background },
         }}
       >
-        {/* Tab screens — tab bar visible */}
-        <Stack.Screen name="MainTabs" component={MainTabs} />
-        {/* Stack overlays — tab bar hidden */}
-        <Stack.Screen name="Scan" component={ScanScreen} />
-        <Stack.Screen name="Result" component={ResultScreen} />
-        <Stack.Screen name="PlateDetail" component={PlateDetailScreen} />
+        {isLoggedIn ? (
+          // ── Authenticated stack ──────────────────────────────────────
+          <>
+            {/* Tab screens — tab bar visible */}
+            <Stack.Screen name="MainTabs" component={MainTabs} />
+            {/* Stack overlays — tab bar hidden */}
+            <Stack.Screen name="Scan" component={ScanScreen} />
+            <Stack.Screen name="Result" component={ResultScreen} />
+            <Stack.Screen name="PlateDetail" component={PlateDetailScreen} />
+          </>
+        ) : (
+          // ── Unauthenticated stack ────────────────────────────────────
+          // animationTypeForReplace: 'pop' makes the forward transition feel
+          // natural when going from Login → MainTabs after a successful login.
+          <Stack.Screen
+            name="Login"
+            component={LoginScreen}
+            options={{ animationTypeForReplace: 'pop' }}
+          />
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -119,9 +145,11 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <ThemeProvider>
-        <AppNavigator />
-      </ThemeProvider>
+      <AuthProvider>
+        <ThemeProvider>
+          <AppNavigator />
+        </ThemeProvider>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }
