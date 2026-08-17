@@ -188,19 +188,36 @@ export async function getWeights() {
   // return raw ? JSON.parse(raw) : [];
 }
 
-// ── Settings / Calorie Goal functions — AsyncStorage-only (no /settings endpoint on server) ──
+// ── Settings / Calorie Goal functions — API-backed ──
 
 export async function getCalorieGoal() {
-  // NOTE: No /settings endpoint exists on the API server (confirmed: GET /settings → 404).
-  // Leaving as AsyncStorage-only for now. If an endpoint is added later, replace with fetch.
-  const raw = await AsyncStorage.getItem(GOAL_KEY);
-  return raw ? parseInt(raw, 10) : DEFAULT_GOAL;
+  try {
+    const res = await apiFetch(`${API_BASE}/settings`);
+    if (!res.ok) {
+      return DEFAULT_GOAL;
+    }
+    const data = await res.json();
+    return data.calorie_goal ?? DEFAULT_GOAL;
+  } catch (err) {
+    console.warn('getCalorieGoal fetch failed, using DEFAULT_GOAL:', err);
+    return DEFAULT_GOAL;
+  }
 }
 
 export async function setCalorieGoal(goal) {
-  // NOTE: No /settings endpoint exists on the API server (confirmed: GET /settings → 404).
-  // Leaving as AsyncStorage-only for now.
-  await AsyncStorage.setItem(GOAL_KEY, goal.toString());
+  try {
+    const res = await apiFetch(`${API_BASE}/settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ calorie_goal: goal }),
+    });
+    if (!res.ok) {
+      throw new Error(`setCalorieGoal PUT /settings failed: ${res.status}`);
+    }
+  } catch (err) {
+    console.warn('setCalorieGoal API failed:', err);
+    throw err;
+  }
 }
 
 export async function getFoodLog() {
