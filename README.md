@@ -2,60 +2,70 @@
 
 A calorie-tracking app built around one core action: photograph a plate of
 food, get an AI estimate of what's on it and how many calories, log it,
-watch a daily "plate ring" fill up.
+watch a daily "plate ring" fill up. Self-hosted end-to-end — deployed as a
+PWA on a home server, not the App Store.
 
 ## How it's structured
 
 ```
 App.js                       navigation entry point
 src/
-  config.js                  AI provider + daily calorie goal (edit this)
-  theme.js                   colors/typography tokens
+  config.js                  AI provider config
+  theme.js                   colors/typography tokens (persisted per-device)
   components/PlateRing.js    the circular daily-progress ring
   screens/
     HomeScreen.js             today's log + the plate ring
     ScanScreen.js             camera / photo picker -> sends to AI
     ResultScreen.js           shows AI's read, editable, then saves
     HistoryScreen.js          past days, grouped
+    PlateDetailScreen.js      per-plate item breakdown, editable
+    WeightTrackerScreen.js    weight log, synced across devices
   services/
     aiService.js              the only file that talks to an AI provider
-    storageService.js         local on-device persistence (AsyncStorage)
+    storageService.js         API client — all data lives on the backend now
+
+platescan-api/                Node/Express + SQLite backend (separate Docker service)
+  routes/plates.js            plate CRUD, image upload + WebP optimization
+  routes/weight.js            weight entries
+  routes/settings.js          single-row settings (calorie goal)
+  routes/auth.js              login, issues a long-lived JWT
+  middleware/auth.js          requireAuth, guards all data + image routes
+  db.js                       better-sqlite3 connection
 ```
 
 The AI call is isolated in `src/services/aiService.js` behind one function,
-`analyzeFoodImage(base64Image)`. Nothing else in the app cares which
-provider answers it — that's deliberate, so you can switch later by editing
-`src/config.js` only.
+`analyzeFoodImage(base64Image)` — currently wired to Gemini. Nothing else
+in the app cares which provider answers it, so switching providers later
+only touches `src/config.js`.
 
-## Choosing your AI provider — the actual tradeoffs
+## Backend
 
-**`provider: 'odysseus'`** — point it at your self-hosted Odysseus instance.
-Free, private, you control the model. Two practical catches: (1) your phone
-and the machine running Odysseus are different devices, so the phone needs
-network access to it — use the machine's LAN IP on the same Wi-Fi, or a
-tunnel/VPN like Tailscale when you're out; (2) Odysseus has to be running,
-with a vision-capable model loaded, every time you want to scan. Accuracy
-will track whatever model you have loaded — a small local model will
-under-perform a frontier cloud model at this task.
+Everything the app stores — plates (with nested items), images, weight
+entries, and the calorie goal — lives server-side now, not on-device. This
+came out of losing all local data (AsyncStorage/IndexedDB) on a reinstall;
+a device losing its local storage no longer means losing history.
 
-I don't have a verified spec for Odysseus's exact API contract, so
-`aiService.js` assumes it exposes a standard OpenAI-style
-`/v1/chat/completions` endpoint with image input (a very common convention
-for self-hosted model servers). If Odysseus's actual API differs, check its
-setup guide and adjust the `callOpenAICompatible` function's URL/payload
-shape accordingly — the rest of the app won't need to change.
+- **API**: Node/Express + SQLite (`better-sqlite3`), deployed via Docker
+  Compose (`platescan-api` service) alongside the frontend (`platescan-web`)
+- **Storage**: SQLite DB + image files on a host bind mount, so data
+  survives container rebuilds
+- **Images**: uploaded photos are converted to WebP on upload — a
+  1600px full-size version and a 400px thumbnail — to keep storage and
+  load times down; thumbnails are used in list views, full-size in the
+  detail screen
+- **Auth**: single-user login (bcrypt password hash + JWT), long-lived
+  session so you're not re-logging in constantly; all data and image
+  routes sit behind `requireAuth`. Images also accept a `?token=` query
+  param, since `<img>` tags on web can't send an Authorization header
+- **Remote access**: reachable both on the home LAN and remotely via
+  Tailscale
+- **Reverse proxy**: NGINX Proxy Manager fronts the whole thing —
+  `platescan.duckdns.org` proxies `/api/*` to the backend and serves the
+  PWA otherwise, with long-lived cache headers on images
 
-**`provider: 'anthropic'`** or **`'openai-compatible'`** — call a cloud
-vision API directly. Works from anywhere, no dependency on a home machine
-being on, generally the strongest food-identification accuracy. You'll
-need an API key and there's a small per-scan cost, and the photo leaves
-your device to that provider.
-
-Whichever you pick: a calorie count from one photo is always an estimate.
-Portion depth, hidden oil/sauce, and unseen ingredients can't be fully
-judged from an image. That's why the Result screen lets you edit the
-AI's numbers before saving — treat it as a fast first guess, not a lab
-measurement.
+Theme (dark/light) is the one setting kept intentionally local rather
+than synced — it's a per-device display preference, not data you'd want
+forced identical across devices.
 
 ## Setup
 
@@ -78,6 +88,7 @@ Using `npx expo install` (rather than the versions pinned in
 
 The default config in `src/config.js` is set to use **Google Gemini's
 free tier** — no card needed, no spend at all for personal use:
+
 - go to aistudio.google.com, sign in, create an API key
 - paste it into `apiKey` in `src/config.js`
 - double-check `model` matches a current free-tier Flash model name at
@@ -85,22 +96,21 @@ free tier** — no card needed, no spend at all for personal use:
   fairly often, so the value in this file may be slightly stale by the
   time you read it
 
-If you outgrow the free tier or want stronger multi-item food reads,
-switch `provider` to `'anthropic'` and follow the commented block in
-`config.js` (~$0.01/scan, no free tier). If you later set up Odysseus,
-switch `provider` to `'odysseus'` and point `baseUrl` at your machine's
-LAN IP + port. None of the other files need to change either way.
-
-Also adjust `DAILY_CALORIE_GOAL` if you want something other than 2000.
+For the backend, bring up `platescan-api` via `docker compose up -d` from
+`~/docker/platescan`; it needs `PASSWORD_HASH` and `JWT_SECRET` env vars
+set in `docker-compose.yml` for auth to work (escape any `$` in the
+bcrypt hash as `$$`, since Compose otherwise interprets it as variable
+interpolation).
 
 Scan with Expo Go on your phone, or build a dev client for camera access
 on a simulator.
 
-## Known rough edges (intentionally left simple for a first pass)
+## Known rough edges
 
-- No auth/multi-user — it's a single local log on one device.
-- No barcode scanning or manual food search — photo-only, as requested.
+- Portion estimation is still just a photo-based guess — depth, hidden
+  oil/sauce, and unseen ingredients can't be fully judged from an image.
+  The Result screen lets you edit the AI's numbers before saving; treat
+  it as a fast first guess, not a lab measurement.
+- Single-user only — one login, one dataset. Not built for multiple
+  people sharing one instance.
 - No retry/backoff on AI calls — a failed scan just shows an alert.
-- Macro fields (protein/carbs/fat) are captured from the AI but only shown
-  implicitly via `notes`/calories on this screen — easy to surface them in
-  `ResultScreen.js` if you want full macro tracking.

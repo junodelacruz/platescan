@@ -58,11 +58,8 @@ export default function HomeScreen({ navigation }) {
   // Subscribe to cross-screen edit updates so HomeScreen refreshes
   // when the user saves changes from PlateDetailScreen
   useEffect(() => {
-    console.log('[HomeScreen] Subscribing to plate-updated event');
     return subscribe('plate-updated', () => {
-      console.log('[HomeScreen] Received plate-updated event, re-fetching...');
       getFoodLog().then(log => {
-        console.log('[HomeScreen] Fetched', log.length, 'entries, updating state');
         setAllEntries(log);
       }).catch(err => console.error('[HomeScreen] Error fetching:', err));
     });
@@ -88,11 +85,6 @@ export default function HomeScreen({ navigation }) {
   const dayEntries = allEntries.filter(
     (e) => formatDateKey(new Date(e.timestamp)) === targetDateStr
   );
-
-  console.log('[DEBUG] allEntries.length:', allEntries.length);
-  console.log('[DEBUG] targetDateStr:', targetDateStr);
-  console.log('[DEBUG] entry dates:', allEntries.map(e => formatDateKey(new Date(e.timestamp))));
-  console.log('[DEBUG] dayEntries.length:', dayEntries.length);
 
   const totalCalories = dayEntries.reduce((sum, e) => sum + (e.total_calories || 0), 0);
   const totalProtein = Math.round(dayEntries.reduce((s, e) => s + (e.items?.reduce((si, i) => si + (Number(i.protein) || 0), 0) ?? 0), 0));

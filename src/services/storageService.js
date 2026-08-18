@@ -1,9 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getToken, clearToken } from './authService';
 import { publish } from './eventBus';
 
-const LOG_KEY = 'foodLog';
-const GOAL_KEY = 'calorieGoal';
 const DEFAULT_GOAL = 2000;
 const API_BASE = 'https://platescan.duckdns.org/api';
 
@@ -33,9 +30,7 @@ async function apiFetch(url, options = {}) {
 // ── Image functions — API-backed (replaces IndexedDB) ──
 
 export async function saveImage(entryId, base64DataUri) {
-  // NEW - Upload image file via POST /plates/:id/image (multipart/form-data)
   try {
-    // Convert data URI to Blob: "data:image/jpeg;base64,..." → Blob
     const byteString = atob(base64DataUri.split(',')[1]);
     const mimeMatch = base64DataUri.match(/^data:(.*);/);
     const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
@@ -63,18 +58,9 @@ export async function saveImage(entryId, base64DataUri) {
     console.warn('saveImage API upload failed:', err);
     throw err;
   }
-  // OLD - IndexedDB version, kept for rollback
-  // const db = await openImageDB();
-  // return new Promise((resolve, reject) => {
-  //   const tx = db.transaction(DB_STORE, 'readwrite');
-  //   tx.objectStore(DB_STORE).put({ id: String(entryId), data: base64DataUri });
-  //   tx.oncomplete = resolve;
-  //   tx.onerror = (e) => reject(e.target.error);
-  // });
 }
 
 export async function loadImage(entryId) {
-  // NEW - Fetch plate from API and return static image URL (full-size)
   try {
     const res = await apiFetch(`${API_BASE}/plates/${entryId}`);
     if (!res.ok) {
@@ -84,8 +70,6 @@ export async function loadImage(entryId) {
     if (!plate.image_filename) {
       return null;
     }
-    // Append ?token= so <Image> on web (rendered as <img>) can authenticate
-    // without sending an Authorization header, which browsers block on <img>.
     const token = await getToken();
     const qs = token ? `?token=${encodeURIComponent(token)}` : '';
     return `${API_BASE}/images/${plate.image_filename}${qs}`;
@@ -93,18 +77,9 @@ export async function loadImage(entryId) {
     console.warn('loadImage fetch failed:', err);
     return null;
   }
-  // OLD - IndexedDB version, kept for rollback
-  // const db = await openImageDB();
-  // return new Promise((resolve, reject) => {
-  //   const tx = db.transaction(DB_STORE, 'readonly');
-  //   const req = tx.objectStore(DB_STORE).get(String(entryId));
-  //   req.onsuccess = (e) => resolve(e.target.result?.data ?? null);
-  //   req.onerror = (e) => reject(e.target.error);
-  // });
 }
 
 export async function loadThumbUrl(entryId) {
-  // Fetch plate from API and return thumbnail URL
   try {
     const res = await apiFetch(`${API_BASE}/plates/${entryId}`);
     if (!res.ok) {
@@ -114,8 +89,6 @@ export async function loadThumbUrl(entryId) {
     if (!plate.image_filename) {
       return null;
     }
-    // Append ?token= so <Image> on web (rendered as <img>) can authenticate
-    // without sending an Authorization header, which browsers block on <img>.
     const token = await getToken();
     const qs = token ? `?token=${encodeURIComponent(token)}` : '';
     return `${API_BASE}/images/thumb/${plate.image_filename}${qs}`;
@@ -126,7 +99,6 @@ export async function loadThumbUrl(entryId) {
 }
 
 export async function deleteImage(entryId) {
-  // NEW - Delete image via DELETE /plates/:id/image
   try {
     const res = await apiFetch(`${API_BASE}/plates/${entryId}/image`, {
       method: 'DELETE',
@@ -139,20 +111,11 @@ export async function deleteImage(entryId) {
     console.warn('deleteImage API failed:', err);
     throw err;
   }
-  // OLD - IndexedDB version, kept for rollback
-  // const db = await openImageDB();
-  // return new Promise((resolve, reject) => {
-  //   const tx = db.transaction(DB_STORE, 'readwrite');
-  //   tx.objectStore(DB_STORE).delete(String(entryId));
-  //   tx.oncomplete = resolve;
-  //   tx.onerror = (e) => reject(e.target.error);
-  // });
 }
 
 // ── Weight functions — API-backed (POST /weight, GET /weight) ──
 
 export async function saveWeight({ date, weight }) {
-  // API accepts { weight, timestamp } — convert date to ms timestamp
   const timestamp = date ? new Date(date).getTime() : Date.now();
   try {
     const res = await apiFetch(`${API_BASE}/weight`, {
@@ -171,7 +134,6 @@ export async function saveWeight({ date, weight }) {
 }
 
 export async function getWeights() {
-  // Returns array of { id, timestamp, weight } from API
   try {
     const res = await apiFetch(`${API_BASE}/weight`);
     if (!res.ok) {
@@ -183,9 +145,6 @@ export async function getWeights() {
     console.warn('getWeights fetch failed:', err);
     throw err;
   }
-  // OLD - AsyncStorage version, kept for rollback
-  // const raw = await AsyncStorage.getItem('weightLog');
-  // return raw ? JSON.parse(raw) : [];
 }
 
 // ── Settings / Calorie Goal functions — API-backed ──
@@ -230,13 +189,9 @@ export async function getFoodLog() {
     console.warn('getFoodLog (plate) fetch failed:', err);
     return [];
   }
-  // OLD - AsyncStorage version, kept for rollback
-  // const raw = await AsyncStorage.getItem(LOG_KEY);
-  // return raw ? JSON.parse(raw) : [];
 }
 
 export async function addFoodEntry(entry) {
-  // Round item-level macros and calories before sending to API
   const roundedItems = (entry.items || []).map(item => ({
     ...item,
     calories: Math.round(item.calories || 0),
@@ -245,7 +200,6 @@ export async function addFoodEntry(entry) {
     fat: Math.round(item.fat || 0),
   }));
 
-  // Aggregate macros from items if not already present on the entry
   const macros = entry.macros
     ? {
         protein: Math.round(entry.macros.protein || 0),
@@ -263,7 +217,6 @@ export async function addFoodEntry(entry) {
       )
       : { protein: 0, carbs: 0, fat: 0 };
 
-  // Round macros and entry-level calories
   const roundedMacros = {
     protein: Math.round(macros.protein || 0),
     carbs: Math.round(macros.carbs || 0),
@@ -276,11 +229,8 @@ export async function addFoodEntry(entry) {
     items: roundedItems,
   };
 
-  // Create the plate row FIRST — image upload requires the row to already exist
-// Build the payload for the JSON POST — omit imageUri, it goes via multipart upload instead
   const { imageUri, ...entryForApi } = updatedEntry;
 
-  // Create the plate row FIRST — image upload requires the row to already exist
   let created;
   try {
     const res = await apiFetch(`${API_BASE}/plates`, {
@@ -296,7 +246,6 @@ export async function addFoodEntry(entry) {
     throw err;
   }
 
-  // THEN upload the image, now that the row exists
   try {
     if (updatedEntry.imageUri && updatedEntry.imageUri.startsWith('data:')) {
       await saveImage(updatedEntry.id, updatedEntry.imageUri);
@@ -310,7 +259,6 @@ export async function addFoodEntry(entry) {
 }
 
 export async function deleteFoodEntry(id) {
-  // Part C: Also delete image from API server (replaces IndexedDB)
   try {
     await deleteImage(id);
   } catch (err) {
@@ -324,36 +272,15 @@ export async function deleteFoodEntry(id) {
     if (!res.ok) {
       throw new Error(`deleteFoodEntry DELETE failed: ${res.status}`);
     }
-    // Return updated list from server
     const listRes = await apiFetch(`${API_BASE}/plates`);
     if (!listRes.ok) return [];
     return await listRes.json();
   } catch (err) {
     throw err;
   }
-  // OLD - AsyncStorage version, kept for rollback
-  // const log = await getFoodLog();
-  // const updated = log.filter((e) => e.id !== id);
-  // await AsyncStorage.setItem(LOG_KEY, JSON.stringify(updated));
-  // return updated;
-}
-
-// Part D: Clear legacy AsyncStorage data on app load
-export async function clearLegacyData() {
-  const FLAG = 'platescan-idb-v1';
-  try {
-    const done = await AsyncStorage.getItem(FLAG);
-    if (done) return;
-    await AsyncStorage.removeItem(LOG_KEY);
-    await AsyncStorage.setItem(FLAG, '1');
-    console.log('platescan: legacy foodLog cleared for IndexedDB migration');
-  } catch (e) {
-    console.warn('clearLegacyData failed (non-fatal):', e);
-  }
 }
 
 export async function updateFoodEntry(id, updatedFields) {
-  // Round item-level macros and calories if items were updated
   let roundedItems = undefined;
   if (updatedFields.items && updatedFields.items.length > 0) {
     roundedItems = updatedFields.items.map(item => ({
@@ -370,7 +297,6 @@ export async function updateFoodEntry(id, updatedFields) {
     patch.items = roundedItems;
   }
 
-  // Recompute macros from items if items were updated
   if (roundedItems && roundedItems.length > 0) {
     patch.macros = {
       protein: Math.round(roundedItems.reduce((acc, item) => acc + (Number(item.protein) || 0), 0)),
@@ -382,7 +308,6 @@ export async function updateFoodEntry(id, updatedFields) {
     patch.totalCalories = recalculatedCalories;
   }
 
-  // Round entry-level calories and macros before sending
   if (patch.macros) {
     patch.macros = {
       protein: Math.round(patch.macros.protein || 0),
@@ -408,14 +333,6 @@ export async function updateFoodEntry(id, updatedFields) {
   } catch (err) {
     throw err;
   }
-  // OLD - AsyncStorage version, kept for rollback
-  // const log = await getFoodLog();
-  // const index = log.findIndex(e => e.id === id);
-  // if (index === -1) return log;
-  // log[index] = { ...log[index], ...updatedFields, items: roundedItems || log[index].items };
-  // if (roundedItems && roundedItems.length > 0) { ... }
-  // await AsyncStorage.setItem(LOG_KEY, JSON.stringify(log));
-  // return log;
 }
 
 export function getTodayEntries(log) {

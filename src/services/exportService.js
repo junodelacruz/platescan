@@ -1,59 +1,25 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const FOOD_KEY = 'foodLog';
-const GOAL_KEY = 'calorieGoal';
-const WEIGHT_KEY = 'weightLog';
-const DB_NAME = 'platescan-images';
-const DB_STORE = 'images';
-const DEFAULT_GOAL = 2000;
-
-function openImageDB() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1);
-    req.onupgradeneeded = (e) => e.target.result.createObjectStore(DB_STORE, { keyPath: 'id' });
-    req.onsuccess = (e) => resolve(e.target.result);
-    req.onerror = (e) => reject(e.target.error);
-  });
-}
+import { getFoodLog, getCalorieGoal, getWeights } from './storageService';
 
 /**
  * Collects all app data into a single exportable object.
- * Reads: foodLog, calorieGoal, weightLog (AsyncStorage),
- *        all images (IndexedDB).
+ * Reads foodLog, calorieGoal, and weightLog from the API server.
+ * Images are server-only; no local images to export.
  */
 export async function getExportData() {
-  const [rawLog, rawGoal, rawWeight] = await Promise.all([
-    AsyncStorage.getItem(FOOD_KEY),
-    AsyncStorage.getItem(GOAL_KEY),
-    AsyncStorage.getItem(WEIGHT_KEY),
+  const [plates, weights] = await Promise.all([
+    getFoodLog(),
+    getWeights(),
   ]);
-
-  // Fetch all images from IndexedDB
-  let images = {};
-  try {
-    const db = await openImageDB();
-    const tx = db.transaction(DB_STORE, 'readonly');
-    const store = tx.objectStore(DB_STORE);
-    const all = await new Promise((resolve, reject) => {
-      const req = store.getAll();
-      req.onsuccess = () => resolve(req.result || []);
-      req.onerror = () => reject(req.error);
-    });
-    for (const img of all) {
-      images[String(img.id)] = img.data;
-    }
-  } catch (err) {
-    console.warn('export: failed to read images from IndexedDB:', err);
-  }
+  const calorieGoal = await getCalorieGoal();
 
   return {
     exportedAt: new Date().toISOString(),
-    plates: rawLog ? JSON.parse(rawLog) : [],
+    plates,
     settings: {
-      calorieGoal: rawGoal ? parseInt(rawGoal, 10) : DEFAULT_GOAL,
+      calorieGoal,
     },
-    weights: rawWeight ? JSON.parse(rawWeight) : [],
-    images,
+    weights,
+    images: {}, // Images are now server-only; no local images to export
   };
 }
 
