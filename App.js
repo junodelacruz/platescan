@@ -14,7 +14,6 @@ import SettingsScreen from './src/screens/SettingsScreen';
 import PlateDetailScreen from './src/screens/PlateDetailScreen';
 import WeightTrackerScreen from './src/screens/WeightTrackerScreen';
 import LoginScreen from './src/screens/LoginScreen';
-import { clearLegacyData } from './src/services/storageService';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -139,10 +138,6 @@ function AppNavigator() {
 }
 
 export default function App() {
-  useEffect(() => {
-    clearLegacyData();
-  }, []);
-
   return (
     <SafeAreaProvider>
       <AuthProvider>
