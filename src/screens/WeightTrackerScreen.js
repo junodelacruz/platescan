@@ -6,7 +6,7 @@ import {
 import Svg, { Polyline, Line, Circle, Text as SvgText } from 'react-native-svg';
 import { useTheme } from '../context/ThemeContext';
 import { useFocusEffect } from '@react-navigation/native';
-import { getWeights, saveWeight } from '../services/storageService';
+import { getWeights, saveWeight, deleteWeightEntry } from '../services/storageService';
 
 const FONT = Platform.OS === 'web' ? 'Inter, system-ui, sans-serif' : undefined;
 
@@ -106,15 +106,18 @@ export default function WeightTrackerScreen() {
   const [inputValue, setInputValue] = useState('');
   const [saved, setSaved] = useState(false);
   const [range, setRange] = useState(30); // 7, 30, 90
+  const [isLoading, setIsLoading] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
       const apiData = await getWeights();
-      // Convert API entries { id, timestamp, weight } → { date: 'YYYY-MM-DD', weight }
+      // Convert API entries { id, timestamp, weight } → { date: 'YYYY-MM-DD', weight, id }
       const entries = apiData.map(item => ({
         date: new Date(item.timestamp).toISOString().slice(0, 10),
         weight: item.weight,
+        id: item.id ?? item._id
       }));
+      console.log('MAPPED ENTRIES:', JSON.stringify(entries, null, 2));
       entries.sort((a, b) => a.date.localeCompare(b.date));
       setLog(entries);
       // Pre-fill today's input if already logged
@@ -129,18 +132,39 @@ export default function WeightTrackerScreen() {
   useFocusEffect(useCallback(() => { refresh(); }, [refresh]));
 
   const handleLog = async () => {
-    const num = parseFloat(inputValue);
-    if (isNaN(num) || num < 50 || num > 700) return;
+    if (isLoading) return;
+    const weight = parseFloat(inputValue);
+    if (isNaN(weight) || weight < 50 || weight > 700) return;
+
+    setIsLoading(true);
     try {
-      await saveWeight({ date: todayKey(), weight: num });
+      await saveWeight({ date: todayKey(), weight });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
       // Reload canonical list from server
       await refresh();
     } catch (err) {
       console.warn('saveWeight failed:', err);
+    } finally {
+      setIsLoading(false);
     }
   };
+
+   // delete entries
+   const handleDelete = async (id) => {
+     console.log('=== handleDelete called with id:', id);
+     console.log('typeof id:', typeof id);
+     try {
+       console.log('Calling deleteWeightEntry...');
+       const remaining = await deleteWeightEntry(id);
+       console.log('deleteWeightEntry returned, remaining:', remaining);
+       console.log('Calling refresh...');
+       await refresh();
+       console.log('refresh done');
+     } catch (err) {
+       console.error('Failed to delete weight entry:', err);
+     }
+   };
 
   // Filter by range
   const cutoff = new Date();
@@ -253,6 +277,7 @@ export default function WeightTrackerScreen() {
               alignItems: 'center',
             }}
             onPress={handleLog}
+            disabled={isLoading}
           >
             <Text style={{
               fontSize: 14,
@@ -306,7 +331,7 @@ export default function WeightTrackerScreen() {
             <Text style={sectionTitle}>History</Text>
             <View style={[card, { padding: 0, overflow: 'hidden' }]}>
               {[...log].reverse().slice(0, 10).map((entry, i, arr) => (
-                <View key={entry.date} style={{
+                <View key={entry.id} style={{
                   flexDirection: 'row', justifyContent: 'space-between',
                   alignItems: 'center',
                   paddingHorizontal: 16, paddingVertical: 13,
@@ -316,9 +341,20 @@ export default function WeightTrackerScreen() {
                   <Text style={{ fontSize: 14, color: colors.inkMuted, fontFamily: FONT }}>
                     {new Date(entry.date + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                   </Text>
-                  <Text style={{ fontSize: 16, fontWeight: '400', color: colors.ink, fontFamily: FONT }}>
-                    {entry.weight} <Text style={{ fontSize: 12, color: colors.inkMuted }}>lbs</Text>
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 16, fontWeight: '400', color: colors.ink, fontFamily: FONT }}>
+                      {entry.weight} <Text style={{ fontSize: 12, color: colors.inkMuted }}>lbs</Text>
+                    </Text>
+                    <TouchableOpacity
+                       onPress={() => {
+                         console.log('=== DELETE BUTTON PRESSED, entry.id =', entry.id);
+                         handleDelete(entry.id);
+                       }}
+                       style={{ marginLeft: 14, padding: 4 }}
+                     >
+                       <Text style={{ fontSize: 16, color: colors.inkMuted }}>✕</Text>
+                     </TouchableOpacity>
+                  </View>
                 </View>
               ))}
             </View>

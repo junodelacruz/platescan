@@ -140,9 +140,26 @@ export async function getWeights() {
       throw new Error(`getWeights GET /weight failed: ${res.status}`);
     }
     const data = await res.json();
+    console.log('RAW API RESPONSE:', JSON.stringify(data, null, 2));
     return data || [];
   } catch (err) {
     console.warn('getWeights fetch failed:', err);
+    throw err;
+  }
+}
+
+export async function deleteWeightEntry(id) {
+  try {
+    const res = await apiFetch(`${API_BASE}/weight/${id}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) {
+      throw new Error(`deleteWeightEntry DELETE failed: ${res.status}`);
+    }
+    const listRes = await apiFetch(`${API_BASE}/weight`);
+    if (!listRes.ok) return [];
+    return await listRes.json();
+  } catch (err) {
     throw err;
   }
 }
