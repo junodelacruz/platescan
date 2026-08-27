@@ -13,7 +13,7 @@ const API_BASE = 'https://platescan.duckdns.org/api';
  * Returns the pre-parsed JSON the backend produces:
  *   { items: [{ name, estimatedGrams, calories, protein, carbs, fat, confidence }], totalCalories, notes }
  */
-export async function analyzeFoodImage(imageBase64, description = '') {
+export async function analyzeFoodImage(imageBase64, description = '', knownItems = '') {
   // expo-image-picker's asset.base64 is raw base64 with NO data-URI prefix.
   // Handle a prefixed string too, in case the caller ever passes one.
   const base64Data = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
@@ -30,6 +30,9 @@ export async function analyzeFoodImage(imageBase64, description = '') {
   formData.append('image', blob, 'plate.jpg');
   if (description) {
     formData.append('notes', description);
+  }
+  if (knownItems) {
+    formData.append('knownItems', knownItems);
   }
 
   const token = await getToken();

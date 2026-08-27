@@ -24,6 +24,8 @@ export default function ScanScreen({ navigation, route }) {
   const [loading, setLoading] = useState(false);
   const [description, setDescription] = useState('');
   const [showDescriptionInput, setShowDescriptionInput] = useState(false);
+  const [knownItems, setKnownItems] = useState('');
+  const [knownItemsFocused, setKnownItemsFocused] = useState(false);
 
   const takePhoto = async () => {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
@@ -66,7 +68,8 @@ export default function ScanScreen({ navigation, route }) {
     setShowDescriptionInput(false);
     setLoading(true);
     try {
-      const analysis = await analyzeFoodImage(imageBase64, description);
+      const analysis = await analyzeFoodImage(imageBase64, description, knownItems);
+      setKnownItems('');
       navigation.replace('Result', { analysis, imageUri, imageBase64, initialDate });
     } catch (err) {
       Alert.alert('Scan failed', err.message || 'Could not analyze this photo. Try again.');
@@ -137,6 +140,58 @@ export default function ScanScreen({ navigation, route }) {
       borderColor: colors.forest,
     },
     secondaryButtonText: { color: colors.forest, fontSize: 16, ...typography.label },
+    knownItemsPanel: {
+      marginTop: 20,
+      marginBottom: 4,
+      padding: 16,
+      backgroundColor: colors.surface,
+      borderRadius: 16,
+      borderWidth: 1.5,
+      borderColor: knownItemsFocused ? colors.tomato : colors.border,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    knownItemsHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 10,
+    },
+    knownItemsBadge: {
+      backgroundColor: knownItemsFocused ? colors.tomato : colors.border,
+      borderRadius: 99,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      marginRight: 8,
+    },
+    knownItemsBadgeText: {
+      fontSize: 10,
+      color: knownItemsFocused ? colors.background : colors.inkMuted,
+      letterSpacing: 0.6,
+      ...typography.label,
+    },
+    knownItemsLabel: {
+      fontSize: 13,
+      color: colors.inkMuted,
+      ...typography.label,
+    },
+    knownItemsInputWrap: {
+      backgroundColor: colors.background,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: knownItemsFocused ? colors.tomato : colors.border,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    knownItemsInput: {
+      fontSize: 14,
+      color: colors.ink,
+      minHeight: 52,
+      textAlignVertical: 'top',
+      outlineStyle: 'none',
+    },
     descriptionPanel: {
       marginTop: 20,
       padding: 16,
@@ -211,6 +266,27 @@ export default function ScanScreen({ navigation, route }) {
 
         {!imageUri && (
           <>
+            <View style={styles.knownItemsPanel}>
+              <View style={styles.knownItemsHeader}>
+                <View style={styles.knownItemsBadge}>
+                  <Text style={styles.knownItemsBadgeText}>OPTIONAL</Text>
+                </View>
+                <Text style={styles.knownItemsLabel}>Pre-weighed items</Text>
+              </View>
+              <View style={styles.knownItemsInputWrap}>
+                <TextInput
+                  style={styles.knownItemsInput}
+                  placeholder="e.g. 150g chicken, 100g rice"
+                  placeholderTextColor={colors.inkMuted}
+                  value={knownItems}
+                  onChangeText={setKnownItems}
+                  onFocus={() => setKnownItemsFocused(true)}
+                  onBlur={() => setKnownItemsFocused(false)}
+                  multiline
+                  numberOfLines={3}
+                />
+              </View>
+            </View>
             <TouchableOpacity style={styles.primaryButton} onPress={takePhoto} disabled={loading}>
               <Text style={styles.primaryButtonText}>Take Photo</Text>
             </TouchableOpacity>
