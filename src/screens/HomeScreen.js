@@ -131,10 +131,14 @@ export default function HomeScreen({ navigation }) {
   const styles = {
     safe: { flex: 1, backgroundColor: colors.background },
     header: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 10,
       flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
-      paddingHorizontal: 20,
       paddingTop: 12,
       height: 56,
     },
@@ -295,9 +299,10 @@ export default function HomeScreen({ navigation }) {
       </View>
 
       <FlatList
+        style={{ flex: 1 }}
         data={dayEntries.slice().reverse()}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingBottom: 72 }}
+        contentContainerStyle={{ paddingTop: 56, paddingBottom: 72 }}
         ListHeaderComponent={
           <>
             {/* SECTION 2 — Calorie ring */}
