@@ -45,7 +45,7 @@ function formatDateKey(date) {
 }
 
 export default function HomeScreen({ navigation }) {
-  const { colors, typography } = useTheme();
+  const { colors, typography, isDark } = useTheme();
   
   // Selected date management (defaults to today)
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -146,7 +146,12 @@ export default function HomeScreen({ navigation }) {
       paddingHorizontal: 16,
       paddingVertical: 8,
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : colors.border,
+      shadowColor: isDark ? '#000000' : '#4A3B32',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: isDark ? 0.25 : 0.06,
+      shadowRadius: 4,
+      elevation: 2,
     },
     dropdownSelectorText: {
       fontSize: 16,
@@ -160,12 +165,27 @@ export default function HomeScreen({ navigation }) {
     },
     
     // Ring area
-    ringWrap: { alignItems: 'center', marginTop: 16, marginBottom: 6 },
-    percentLabel: { fontSize: 13, color: colors.tomato, marginTop: 8, fontWeight: '400', fontFamily: FONT },
+    ringWrap: { alignItems: 'center', marginTop: 14, marginBottom: 10 },
+    ringCard: {
+      width: 248,
+      height: 248,
+      borderRadius: 124,
+      backgroundColor: colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : colors.border,
+      shadowColor: isDark ? '#000000' : '#4A3B32',
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: isDark ? 0.45 : 0.12,
+      shadowRadius: 16,
+      elevation: 8,
+    },
+    percentLabel: { fontSize: 13, color: colors.tomato, marginTop: 10, fontWeight: '500', fontFamily: FONT },
 
     // Macro card
     macroCard: {
-      borderRadius: 16,
+      borderRadius: 18,
       backgroundColor: colors.surface,
       padding: 16,
       marginHorizontal: 20,
@@ -173,6 +193,13 @@ export default function HomeScreen({ navigation }) {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-around',
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : colors.border,
+      shadowColor: isDark ? '#000000' : '#4A3B32',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: isDark ? 0.25 : 0.06,
+      shadowRadius: 6,
+      elevation: 2,
     },
     macroCol: { flex: 1, alignItems: 'center' },
     macroDivider: { width: 1, height: 36, backgroundColor: colors.border },
@@ -201,10 +228,10 @@ export default function HomeScreen({ navigation }) {
       paddingVertical: 16,
       alignItems: 'center',
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 2,
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: isDark ? 0.35 : 0.15,
+      shadowRadius: 6,
+      elevation: 4,
     },
     scanButtonText: { color: colors.ink, fontSize: 16, ...typography.label, letterSpacing: 1 },
 
@@ -269,7 +296,9 @@ export default function HomeScreen({ navigation }) {
           <>
             {/* SECTION 2 — Calorie ring */}
             <View style={styles.ringWrap}>
-              <PlateRing consumed={totalCalories} goal={goal} />
+              <View style={styles.ringCard}>
+                <PlateRing consumed={totalCalories} goal={goal} />
+              </View>
               <Text style={styles.percentLabel}>{pct}% of daily goal</Text>
             </View>
 
@@ -365,7 +394,7 @@ export default function HomeScreen({ navigation }) {
 
 // SECTION 5 — Plate card
 function EntryRow({ item, index, entries, navigation }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const [imageUri, setImageUri] = useState(null);
 
   useEffect(() => {
@@ -382,27 +411,32 @@ function EntryRow({ item, index, entries, navigation }) {
 
   const cardStyle = {
     backgroundColor: colors.surface,
-    borderRadius: 16,
+    borderRadius: 18,
     marginHorizontal: 20,
     marginBottom: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: isDark ? 'rgba(255, 255, 255, 0.07)' : colors.border,
     flexDirection: 'row',
-    overflow: 'hidden',
+    alignItems: 'center',
+    shadowColor: isDark ? '#000000' : '#4A3B32',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: isDark ? 0.35 : 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   };
 
   const thumbPlaceholder = {
     width: 80,
     height: 80,
-    borderRadius: 12,
-    backgroundColor: colors.border,
+    borderRadius: 14,
+    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : colors.border,
   };
 
   const thumbImage = {
     width: 80,
     height: 80,
-    borderRadius: 12,
+    borderRadius: 14,
   };
 
   const contentStyle = { flex: 1, paddingLeft: 12, justifyContent: 'center' };
