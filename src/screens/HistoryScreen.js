@@ -37,7 +37,7 @@ function dateKey(date) {
 }
 
 function MealEntryRow({ entry, entries = [], navigation }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const [imageUri, setImageUri] = useState(null);
 
   useEffect(() => {
@@ -65,6 +65,11 @@ function MealEntryRow({ entry, entries = [], navigation }) {
         borderColor: colors.border,
         flexDirection: 'row',
         overflow: 'hidden',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: isDark ? 0.65 : 0.15,
+        shadowRadius: 16,
+        elevation: 8,
       }}
       activeOpacity={0.7}
       onPress={() => navigation.navigate('PlateDetail', {
@@ -123,7 +128,7 @@ function MealEntryRow({ entry, entries = [], navigation }) {
 }
 
 export default function HistoryScreen({ navigation }) {
-  const { colors, typography } = useTheme();
+  const { colors, typography, isDark } = useTheme();
   const today = new Date();
   
   // Layout Constants
@@ -336,7 +341,7 @@ export default function HistoryScreen({ navigation }) {
     dayText: { fontSize: 13, color: colors.ink, fontWeight: '500' },
     dayTextSelected: { color: colors.background, fontWeight: '700' },
     dot: { width: 4, height: 4, borderRadius: 2, marginTop: 1 },
-    
+
     // Draggable panel styles
     panelContainer: {
       position: 'absolute',
@@ -347,9 +352,9 @@ export default function HistoryScreen({ navigation }) {
       backgroundColor: colors.surface,
       borderRadius: 24,
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: -4 },
-      shadowOpacity: 0.15,
-      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: isDark ? 0.65 : 0.15,
+      shadowRadius: 16,
       elevation: 8,
       borderWidth: 1,
       borderColor: colors.border,
@@ -539,7 +544,7 @@ export default function HistoryScreen({ navigation }) {
                 <>
                   <View style={styles.summaryRow}>
                     <View style={styles.summaryCol}>
-                      <Text style={[styles.summaryValue, { color: colors.tomato }]}>{selectedTotal}</Text>
+                      <Text style={[styles.summaryValue, { color: colors.white }]}>{selectedTotal}</Text>
                       <Text style={styles.summaryLabel}>kcal</Text>
                     </View>
                     <View style={styles.summaryDivider} />
@@ -549,12 +554,12 @@ export default function HistoryScreen({ navigation }) {
                     </View>
                     <View style={styles.summaryDivider} />
                     <View style={styles.summaryCol}>
-                      <Text style={[styles.summaryValue, { color: colors.gold }]}>{selectedCarbs}g</Text>
+                      <Text style={[styles.summaryValue, { color: '#D9A441' }]}>{selectedCarbs}g</Text>
                       <Text style={styles.summaryLabel}>Carbs</Text>
                     </View>
                     <View style={styles.summaryDivider} />
                     <View style={styles.summaryCol}>
-                      <Text style={[styles.summaryValue, { color: colors.forest }]}>{selectedFat}g</Text>
+                      <Text style={[styles.summaryValue, { color: '#D95644' }]}>{selectedFat}g</Text>
                       <Text style={styles.summaryLabel}>Fat</Text>
                     </View>
                   </View>

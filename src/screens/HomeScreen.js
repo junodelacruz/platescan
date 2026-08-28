@@ -194,12 +194,12 @@ export default function HomeScreen({ navigation }) {
       alignItems: 'center',
       justifyContent: 'space-around',
       borderWidth: 1,
-      borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : colors.border,
+      borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : colors.border,
       shadowColor: isDark ? '#000000' : '#4A3B32',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: isDark ? 0.25 : 0.06,
-      shadowRadius: 6,
-      elevation: 2,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: isDark ? 0.65 : 0.15,
+      shadowRadius: 16,
+      elevation: 8,
     },
     macroCol: { flex: 1, alignItems: 'center' },
     macroDivider: { width: 1, height: 36, backgroundColor: colors.border },
@@ -217,21 +217,27 @@ export default function HomeScreen({ navigation }) {
       marginBottom: 8,
     },
 
-    // Scan button - lowered by adjusting bottom container padding and positioning
-    scanButton: {
+    scanButtonWrapper: {
       position: 'absolute',
-      bottom: 8,
-      left: 20,
-      right: 20,
+      bottom: 0,
+      left: 0,
+      right: 0,
+      overflow: 'visible',
+    },
+
+    // Scan button
+    scanButton: {
+      marginHorizontal: 20,
+      marginBottom: 8,
       backgroundColor: colors.tomato,
       borderRadius: 16,
       paddingVertical: 16,
       alignItems: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 3 },
-      shadowOpacity: isDark ? 0.35 : 0.15,
-      shadowRadius: 6,
-      elevation: 4,
+      shadowColor: isDark ? '#000000' : '#4A3B32',
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: isDark ? 0.65 : 0.15,
+      shadowRadius: 16,
+      elevation: 8,
     },
     scanButtonText: { color: colors.ink, fontSize: 16, ...typography.label, letterSpacing: 1 },
 
@@ -339,9 +345,15 @@ export default function HomeScreen({ navigation }) {
   )}
       />
 
-      <TouchableOpacity style={styles.scanButton} onPress={handleNavigateToScan}>
-        <Text style={styles.scanButtonText}>Scan a Plate</Text>
-      </TouchableOpacity>
+      <View style={styles.scanButtonWrapper}>
+        <TouchableOpacity
+          style={styles.scanButton}
+          onPress={handleNavigateToScan}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.scanButtonText}>Scan a Plate</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Date Selector Modal */}
       <Modal visible={dropdownVisible} transparent animationType="fade">
@@ -420,10 +432,10 @@ function EntryRow({ item, index, entries, navigation }) {
     flexDirection: 'row',
     alignItems: 'center',
     shadowColor: isDark ? '#000000' : '#4A3B32',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: isDark ? 0.35 : 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: isDark ? 0.65 : 0.15,
+    shadowRadius: 16,
+    elevation: 8,
   };
 
   const thumbPlaceholder = {
