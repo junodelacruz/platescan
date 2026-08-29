@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react';
-import { View, Text, FlatList, TouchableOpacity, SafeAreaView, Image, Modal, TouchableWithoutFeedback, Platform } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, Image, Modal, TouchableWithoutFeedback, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import PlateRing from '../components/PlateRing';
 import { getFoodLog, getCalorieGoal, loadImage, loadThumbUrl } from '../services/storageService';
@@ -46,6 +47,7 @@ function formatDateKey(date) {
 
 export default function HomeScreen({ navigation }) {
   const { colors, typography, isDark } = useTheme();
+  const insets = useSafeAreaInsets(); // Reads dynamic top/bottom edge insets
   
   // Selected date management (defaults to today)
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -132,15 +134,17 @@ export default function HomeScreen({ navigation }) {
     safe: { flex: 1, backgroundColor: colors.background },
     header: {
       position: 'absolute',
-      top: 0,
+      top: insets.top, // Dynamic inset pushes header below Dynamic Island
       left: 0,
       right: 0,
-      zIndex: 10,
+      zIndex: 999, // Ensure high stack index
+      transform: [{ translateX: 0 }], // Forces GPU layer creation on iOS Safari
       flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
       paddingTop: 12,
       height: 56,
+      pointerEvents: 'box-none', // Allows scroll/touch events underneath transparent space
     },
     dropdownSelector: {
       flexDirection: 'row',
@@ -226,13 +230,15 @@ export default function HomeScreen({ navigation }) {
       bottom: 0,
       left: 0,
       right: 0,
+      paddingBottom: Platform.OS === 'web' 
+        ? 'env(safe-area-inset-bottom, 12px)' 
+        : Math.max(insets.bottom, 12), // Pulls it down directly against the home indicator
       overflow: 'visible',
     },
 
-    // Scan button
     scanButton: {
       marginHorizontal: 20,
-      marginBottom: 8,
+      marginBottom: 0, // Removed extra margin so it doesn't push up further
       backgroundColor: colors.tomato,
       borderRadius: 16,
       paddingVertical: 16,
@@ -289,7 +295,7 @@ export default function HomeScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <View style={styles.safe}>
       {/* SECTION 1 — Header: centered date dropdown */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.dropdownSelector} onPress={() => setDropdownVisible(true)}>
@@ -299,10 +305,14 @@ export default function HomeScreen({ navigation }) {
       </View>
 
       <FlatList
-        style={{ flex: 1 }}
+        style={{ flex: 1, WebkitOverflowScrolling: 'touch' }}
         data={dayEntries.slice().reverse()}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingTop: 56, paddingBottom: 72 }}
+        contentContainerStyle={{
+          paddingTop: insets.top + 56, // Pads list content so it clears absolute header
+          paddingBottom: insets.bottom + 80 // Ensures content clears floating scan button
+        }}
+        scrollEventThrottle={16}
         ListHeaderComponent={
           <>
             {/* SECTION 2 — Calorie ring */}
@@ -340,14 +350,14 @@ export default function HomeScreen({ navigation }) {
         ListEmptyComponent={
           <Text style={styles.emptyText}>Nothing logged on this day.</Text>
         }
-  renderItem={({ item, index }) => (
-    <EntryRow
-      item={item}
-      index={index}
-      entries={dayEntries.slice().reverse()}
-      navigation={navigation}
-    />
-  )}
+        renderItem={({ item, index }) => (
+          <EntryRow
+            item={item}
+            index={index}
+            entries={dayEntries.slice().reverse()}
+            navigation={navigation}
+          />
+        )}
       />
 
       <View style={styles.scanButtonWrapper}>
@@ -405,7 +415,7 @@ export default function HomeScreen({ navigation }) {
           </View>
         </TouchableWithoutFeedback>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 

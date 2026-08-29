@@ -16,7 +16,7 @@ import WeightTrackerScreen from './src/screens/WeightTrackerScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
-import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets, initialWindowMetrics } from 'react-native-safe-area-context';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -43,9 +43,10 @@ function MainTabs() {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
 
-  // Dynamic bottom margin: on devices with safe area (like notch iPhones), use insets.bottom + 8.
-  // On other devices, use 12px for breathing room.
-  const bottomMargin = insets.bottom > 0 ? insets.bottom + 8 : 12;
+  // Platform-aware bottom padding: only on mobile where home indicator/navigation bar exists
+  const bottomPadding = Platform.OS === 'ios' ? Math.max(insets.bottom - 4, 4)
+    : Platform.OS === 'android' ? 12
+    : 0;
 
   return (
     <View style={[styles.tabBarWrapper, { backgroundColor: colors.surface }]}>
@@ -69,8 +70,7 @@ function MainTabs() {
             borderTopWidth: 1,
             height: 60,
             paddingTop: 6,
-            paddingBottom: 0,
-            marginBottom: bottomMargin,
+            paddingBottom: bottomPadding,
           },
         })}
       >
@@ -109,7 +109,8 @@ function AppNavigator() {
       <Stack.Navigator
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: colors.background },
+          headerTransparent: true,
+          contentStyle: { backgroundColor: 'transparent' },
         }}
       >
         {isLoggedIn ? (
@@ -138,8 +139,17 @@ function AppNavigator() {
 }
 
 export default function App() {
+  // Safe default values if initialWindowMetrics evaluates to null/undefined on the web
+  const webMetrics = initialWindowMetrics || {
+    frame: { x: 0, y: 0, width: 0, height: 0 },
+    insets: { top: 0, left: 0, right: 0, bottom: 0 },
+  };
+
   return (
-    <SafeAreaProvider>
+    <SafeAreaProvider 
+      initialMetrics={webMetrics}
+      style={{ flex: 1, height: '100%', width: '100%' }} // Absolute size lock
+    >
       <AuthProvider>
         <ThemeProvider>
           <AppNavigator />

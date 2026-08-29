@@ -245,7 +245,7 @@ export default function ScanScreen({ navigation, route }) {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.inner}>
-        <StatusBar barTitle="light-content" />
+        {/* <StatusBar barTitle="light-content" /> */}
         <BackButton onPress={() => navigation.goBack()} />
         <Text style={styles.title}>Scan Your Plate</Text>
         <Text style={styles.subtitle}>Center the plate in frame — good lighting helps accuracy.</Text>
