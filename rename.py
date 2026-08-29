@@ -1,0 +1,1 @@
+import pathlib\np=pathlib.Path(r'C:/Users/junod/Desktop/Personal Projects/platescan/App.js')\nt=p.read_text()\nt=t.replace('bottomPadding','bottomSpacer')\np.write_text(t)
