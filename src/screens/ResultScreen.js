@@ -114,7 +114,7 @@ export default function ResultScreen({ route, navigation }) {
   };
 
   const styles = {
-    safe: { flex: 1 },
+    safe: { flex: 1, backgroundColor: colors.background },
     content: { padding: 24, paddingBottom: 40 },
     title: { fontSize: 22, marginBottom: 16, color: colors.ink },
     image: { width: '100%', height: 200, borderRadius: 16, marginBottom: 20 },
