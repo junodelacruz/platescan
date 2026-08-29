@@ -130,6 +130,10 @@ export default function HomeScreen({ navigation }) {
     navigation.navigate('Scan', { initialDate: selectedDate.toISOString() });
   };
 
+  const isStandalonePWA = Platform.OS === 'web' &&
+  typeof navigator !== 'undefined' &&
+  (navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches);
+
   const styles = {
     safe: { flex: 1, backgroundColor: colors.background },
     header: {
@@ -230,9 +234,9 @@ export default function HomeScreen({ navigation }) {
       bottom: 0,
       left: 0,
       right: 0,
-      paddingBottom: Platform.OS === 'web' 
-        ? 'env(safe-area-inset-bottom, 12px)' 
-        : Math.max(insets.bottom, 12), // Pulls it down directly against the home indicator
+      paddingBottom: isStandalonePWA
+        ? 12
+        : 'calc(env(safe-area-inset-bottom, 0px) + 12px)',
       overflow: 'visible',
     },
 

@@ -1,6 +1,4 @@
-import 'react-native-gesture-handler';
-import React, { useEffect } from 'react';
-import { View, Platform, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Platform, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -39,56 +37,55 @@ function TabIcon({ name, focused, color }) {
   );
 }
 
+const isStandalonePWA = Platform.OS === 'web' &&
+  typeof navigator !== 'undefined' &&
+  (navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches);
+
 function MainTabs() {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
 
-  // Platform-aware bottom padding: only on mobile where home indicator/navigation bar exists
-  const bottomPadding = Platform.OS === 'ios' ? Math.max(insets.bottom - 4, 4)
+  const bottomInset = isStandalonePWA ? Math.max(insets.bottom - 4, 4)
     : Platform.OS === 'android' ? 12
     : 0;
 
   return (
-    <View style={[styles.tabBarWrapper, { backgroundColor: colors.surface }]}>
-      <Tab.Navigator
-        screenOptions={({ route }) => ({
-          headerShown: false,
-          tabBarIcon: ({ focused, color }) => (
-            <TabIcon name={route.name} focused={focused} color={color} />
-          ),
-          tabBarActiveTintColor: isDark ? colors.tomato : '#333333',
-          tabBarInactiveTintColor: isDark ? colors.inkMuted : '#999999',
-          tabBarLabelStyle: {
-            fontSize: 10,
-            fontFamily: FONT,
-            fontWeight: '500',
-            marginBottom: 2,
-          },
-          tabBarStyle: {
-            backgroundColor: colors.surface,
-            borderTopColor: colors.border,
-            borderTopWidth: 1,
-            height: 60,
-            paddingTop: 6,
-            paddingBottom: bottomPadding,
-          },
-        })}
-      >
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+      headerShown: false,
+      tabBarLabelPosition: 'below-icon',
+      tabBarIcon: ({ focused, color }) => (
+        <TabIcon name={route.name} focused={focused} color={color} />
+      ),
+      tabBarActiveTintColor: isDark ? colors.tomato : '#333333',
+      tabBarInactiveTintColor: isDark ? colors.inkMuted : '#999999',
+      tabBarLabelStyle: {
+        fontSize: 10,
+        fontFamily: FONT,
+        fontWeight: '500',
+        marginTop: -4,     // pulls label up, closer to icon
+        marginBottom: 2,
+      },
+      tabBarIconStyle: {
+        marginBottom: -4,  // pulls icon down, closer to label
+      },
+      tabBarStyle: {
+        backgroundColor: colors.surface,
+        borderTopColor: colors.border,
+        borderTopWidth: 1,
+        height: 60 + bottomInset,
+        paddingTop: 6,
+        paddingBottom: bottomInset,
+      },
+    })}
+    >
       <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarLabel: 'Home' }} />
       <Tab.Screen name="History" component={HistoryScreen} options={{ tabBarLabel: 'Calendar' }} />
       <Tab.Screen name="Weight" component={WeightTrackerScreen} options={{ tabBarLabel: 'Weight' }} />
       <Tab.Screen name="Settings" component={SettingsScreen} options={{ tabBarLabel: 'Settings' }} />
-      </Tab.Navigator>
-    </View>
+    </Tab.Navigator>
   );
 }
-
-const styles = StyleSheet.create({
-  tabBarWrapper: {
-    flex: 1,
-    backgroundColor: '#2A241E',
-  },
-});
 
 function AppNavigator() {
   const { colors, isDark } = useTheme();

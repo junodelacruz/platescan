@@ -29,27 +29,20 @@ html = html.replace('</head>', `${pwaMetaTags}\n</head>`);
 // 2. FORCE NATIVE LAYOUT ENGINE DEEPER THAN THE INJECTED FRAMEWORK DIVS
 const layoutOverrides = `
   <style>
-    /* Force the main engine window to absorb the top status bar */
     html {
-      height: calc(100% + env(safe-area-inset-top)) !important;
       background-color: transparent !important;
     }
 
-    /* Target EVERY major parent container React Native Web auto-injects */
     body, #root, [data-contents="true"], .css-view-175oi2r {
       position: fixed !important;
-      top: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      bottom: -env(safe-area-inset-top) !important;
-      height: calc(100% + env(safe-area-inset-top)) !important;
+      inset: 0 !important;
+      height: 100% !important;
       width: 100% !important;
       margin: 0 !important;
       padding: 0 !important;
       overflow: hidden !important;
     }
 
-    /* Force your primary screens to bypass internal flex-box boundaries */
     #root > div {
       margin-top: 0 !important;
       padding-top: 0 !important;
