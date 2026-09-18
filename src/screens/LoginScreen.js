@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { login } from '../services/authService';
+import { Image } from 'react-native';
 
 const FONT = Platform.OS === 'web' ? 'Inter, system-ui, sans-serif' : undefined;
 
@@ -162,11 +163,15 @@ export default function LoginScreen() {
         <View style={inner}>
           {/* App icon */}
           <View style={iconWrap}>
-            <Ionicons name="scan-outline" size={36} color={colors.tomato} />
+            <Image
+            source={require('../assets/images/icon.png')}
+            style={{ width: 46, height: 46 , paddingBottom: 75 }}
+            resizeMode="contain"
+            />
           </View>
 
           {/* Wordmark */}
-          <Text style={wordmark}>PlateScan</Text>
+          <Text style={wordmark}>Platescan</Text>
           <Text style={tagline}>Your personal nutrition tracker</Text>
 
           {/* Login card */}

@@ -18,7 +18,8 @@
     "web": {
       "manifest": {
         "orientation": "portrait"
-      }
+      },
+      "favicon": "./web/public/img/favicon.png"
     }
   }
 }
