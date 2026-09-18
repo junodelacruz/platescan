@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const distDir = path.join(__dirname, '..', 'dist');
-const templatePath = path.join(__dirname, '..', 'web', 'public', 'index.html');
+const templatePath = path.join(__dirname, '..', 'public', 'index.html');
 const outputPath = path.join(distDir, 'index.html');
 
 // Find the actual bundle file
