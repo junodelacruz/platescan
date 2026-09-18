@@ -1,4 +1,10 @@
+<div align="center">
+
+![icon](src\assets\images\icon.png)
+
 # Platescan
+
+</div>
 
 Platescan is a personal calorie tracking and nutritional app. Take a picture of a plate of food, and recieve an AI estimated breakdown of the calories and macros. Log plates, track weight, and view progress!
 
@@ -15,4 +21,4 @@ Tracking calories by hand is a big waste of time, so I created Platescan as a fr
 https://github.com/junodelacruz/
 
 ## Usage
-
+q
