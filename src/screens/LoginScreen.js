@@ -185,7 +185,7 @@ export default function LoginScreen() {
                 onChangeText={(t) => { setPassword(t); if (error) setError(''); }}
                 placeholder="Enter password"
                 placeholderTextColor={colors.inkMuted}
-                secureTextEntry={!showPassword}
+                secureTextEntry={true}
                 autoCapitalize="none"
                 autoCorrect={false}
                 returnKeyType="go"
