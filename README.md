@@ -24,10 +24,8 @@ https://github.com/junodelacruz/
 
 Login → Scan → Edit
 
-<img width="500" height="400" alt="rotato1" src="https://github.com/user-attachments/assets/01fa9c60-7bb9-4a1d-ad64-4088f0c2bdf5" />
-
+<img width="600" height="500" alt="rotato1" src="https://github.com/user-attachments/assets/01fa9c60-7bb9-4a1d-ad64-4088f0c2bdf5" />
 
 Scanning with context
 
-<img width="500" height="400" alt="rotato2" src="https://github.com/user-attachments/assets/fa1c83cc-55a0-451b-8e45-f8b384d4134e" />
-
+<img width="600" height="500" alt="rotato2" src="https://github.com/user-attachments/assets/fa1c83cc-55a0-451b-8e45-f8b384d4134e" />
