@@ -1,6 +1,6 @@
 <div align="center">
 
-![icon](src\assets\images\icon.png)
+![icon](src/assets/images/icon.png)
 
 # Platescan
 
@@ -22,4 +22,4 @@ https://github.com/junodelacruz/
 
 ## Usage
 
-<video src="src\assets\images\rotato1.mp4" width="600" height="500" controls></video>
+<video src="src/assets/images/rotato1.mp4" width="600" height="500" controls></video>
