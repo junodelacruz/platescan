@@ -28,5 +28,4 @@ Login → Scan → Edit
 
 Scanning with context
 
-<img width="480" height="360" alt="rotato2" src="https://github.com/user-attachments/assets/333a42d0-8afc-4951-bc74-aa9c3e61948e" />
 
