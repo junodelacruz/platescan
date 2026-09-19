@@ -21,5 +21,3 @@ Tracking calories by hand is a big waste of time, so I created Platescan as a fr
 https://github.com/junodelacruz/
 
 ## Usage
-
-<video src="src/assets/images/rotato1.mp4" width="600" height="500" controls></video>
