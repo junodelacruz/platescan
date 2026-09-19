@@ -20,6 +20,8 @@ Tracking calories by hand is a big waste of time, so I created Platescan as a fr
 
 https://github.com/junodelacruz/
 
-## Usage
+## Features
+
+Login → Scan → Edit
 
 <img width="480" height="360" alt="output" src="https://github.com/user-attachments/assets/ea4f6497-97ac-43fb-a179-8e6aa553f983" />
