@@ -14,7 +14,7 @@ Platescan is a personal calorie tracking and nutritional app. Take a picture of 
 
 <div align="center">
 
-<img width="600" height="460" alt="rotato1" src="https://github.com/user-attachments/assets/01fa9c60-7bb9-4a1d-ad64-4088f0c2bdf5" />
+<img width="600" height="460" alt="demo1" src="https://github.com/user-attachments/assets/01fa9c60-7bb9-4a1d-ad64-4088f0c2bdf5" />
 
 **Login → Scan → Edit**
 
@@ -24,7 +24,9 @@ Platescan is a personal calorie tracking and nutritional app. Take a picture of 
 
 ## Overview
 
-Tracking calories by hand is a big waste of time, so I created Platescan as a free alternative to other options to assist me in an efficient physical health journey.
+Tracking calories is tedious. I used to send images of my food into an LLM to track calories, amd most other applications are paid and locked behind a monthly subscription. I realized I can engineer my own version, so I created Platescan as a personal free alternative.
+
+Platescan is fully developed and hosted in my room. I wanted to experience creating and hosting everything from frontend to backend myself, without relying on external services.
 
 ### Author
 
@@ -37,19 +39,19 @@ Juno Dela Cruz
 
 <div align="center">
 
-<img width="600" height="460" alt="rotato2" src="https://github.com/user-attachments/assets/fa1c83cc-55a0-451b-8e45-f8b384d4134e" />
+<img width="600" height="460" alt="demo2" src="https://github.com/user-attachments/assets/fa1c83cc-55a0-451b-8e45-f8b384d4134e" />
 
 **Scanning with context**
 
 ---
 
-<img width="600" height="460" alt="rotato3" src="https://github.com/user-attachments/assets/fb6b6ec9-d919-417b-a7b8-a319dce1376b" />
+<img width="600" height="460" alt="demo3" src="https://github.com/user-attachments/assets/fb6b6ec9-d919-417b-a7b8-a319dce1376b" />
 
 **Calendar**
 
 ---
 
-<img width="600" height="460" alt="rotato4" src="https://github.com/user-attachments/assets/c30ecae3-15e8-4f45-99a0-9f44567f4458" />
+<img width="600" height="460" alt="demo4" src="https://github.com/user-attachments/assets/c30ecae3-15e8-4f45-99a0-9f44567f4458" />
 
 **Weight Tracker**
 
