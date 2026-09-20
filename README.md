@@ -29,3 +29,8 @@ Login → Scan → Edit
 Scanning with context
 
 <img width="600" height="500" alt="rotato2" src="https://github.com/user-attachments/assets/fa1c83cc-55a0-451b-8e45-f8b384d4134e" />
+
+Calendar
+
+<img width="600" height="500" alt="rotato3" src="https://github.com/user-attachments/assets/fb6b6ec9-d919-417b-a7b8-a319dce1376b" />
+
