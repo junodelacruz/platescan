@@ -22,6 +22,8 @@ https://github.com/junodelacruz/
 
 ## Features
 
+<div align="center">
+
 Login → Scan → Edit
 
 <img width="600" height="500" alt="rotato1" src="https://github.com/user-attachments/assets/01fa9c60-7bb9-4a1d-ad64-4088f0c2bdf5" />
@@ -34,3 +36,4 @@ Calendar
 
 <img width="600" height="500" alt="rotato3" src="https://github.com/user-attachments/assets/fb6b6ec9-d919-417b-a7b8-a319dce1376b" />
 
+</div>
