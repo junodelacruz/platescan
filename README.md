@@ -42,4 +42,10 @@ https://github.com/junodelacruz/
 
 ---
 
+<img width="600" height="500" alt="rotato4" src="https://github.com/user-attachments/assets/c30ecae3-15e8-4f45-99a0-9f44567f4458" />
+
+**Weight Tracker**
+
+---
+
 </div>
