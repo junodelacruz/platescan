@@ -6,7 +6,7 @@
 
 </div>
 
-Platescan is a personal calorie tracking and nutritional app. Take a picture of a plate of food, and recieve an AI estimated breakdown of the calories and macros. Log plates, track weight, and view progress!
+Platescan is a personal calorie tracking and nutritional app. Take a picture of a plate of food, and receive an AI estimated breakdown of the calories and macros. Log plates, track weight, and view progress!
 
 **NOTE: Platescan is currently single-user only! Expansion to multi-user support is unknown.**
 
@@ -16,9 +16,13 @@ Platescan is a browser based web app built with Expo and React Native Web on the
 
 Tracking calories by hand is a big waste of time, so I created Platescan as a free alternative to other options to assist me in an efficient physical health journey.
 
-### Authors
+### Author
 
-https://github.com/junodelacruz/
+Juno Dela Cruz
+
+[Github](https://github.com/junodelacruz/)
+
+![React](https://shields.io)
 
 ## Features
 
