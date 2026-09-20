@@ -20,9 +20,8 @@ Tracking calories by hand is a big waste of time, so I created Platescan as a fr
 
 Juno Dela Cruz
 
-[![Linkedin](https://i.sstatic.net/gVE0j.png) LinkedIn](https://www.linkedin.com/juno-dela-cruz)
-&nbsp;
-[![GitHub](https://i.sstatic.net/tskMh.png) GitHub](https://github.com/junodelacruz)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=flat&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/juno-dela-cruz/)
+[![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat&logo=github&logoColor=white)](https://github.com/junodelacruz)
 
 ## Features
 
