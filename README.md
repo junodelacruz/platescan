@@ -24,25 +24,25 @@ https://github.com/junodelacruz/
 
 <div align="center">
 
-<img width="600" height="500" alt="rotato1" src="https://github.com/user-attachments/assets/01fa9c60-7bb9-4a1d-ad64-4088f0c2bdf5" />
+<img width="600" height="460" alt="rotato1" src="https://github.com/user-attachments/assets/01fa9c60-7bb9-4a1d-ad64-4088f0c2bdf5" />
 
 **Login → Scan → Edit**
 
 ---
 
-<img width="600" height="500" alt="rotato2" src="https://github.com/user-attachments/assets/fa1c83cc-55a0-451b-8e45-f8b384d4134e" />
+<img width="600" height="460" alt="rotato2" src="https://github.com/user-attachments/assets/fa1c83cc-55a0-451b-8e45-f8b384d4134e" />
 
 **Scanning with context**
 
 ---
 
-<img width="600" height="500" alt="rotato3" src="https://github.com/user-attachments/assets/fb6b6ec9-d919-417b-a7b8-a319dce1376b" />
+<img width="600" height="460" alt="rotato3" src="https://github.com/user-attachments/assets/fb6b6ec9-d919-417b-a7b8-a319dce1376b" />
 
 **Calendar**
 
 ---
 
-<img width="600" height="500" alt="rotato4" src="https://github.com/user-attachments/assets/c30ecae3-15e8-4f45-99a0-9f44567f4458" />
+<img width="600" height="460" alt="rotato4" src="https://github.com/user-attachments/assets/c30ecae3-15e8-4f45-99a0-9f44567f4458" />
 
 **Weight Tracker**
 
