@@ -10,9 +10,19 @@ Platescan is a personal calorie tracking and nutritional app. Take a picture of 
 
 **NOTE: Platescan is currently single-user only! Expansion to multi-user support is unknown.**
 
-## Overview
+---
 
-Platescan is a browser based web app built with Expo and React Native Web on the frontend, and Node + SQLite for the backend. It is containerized as its own Docker instance and hosted entirely on my home server. With DuckDNS + NGINX Proxy Manager, it can be accessed as any regular website.
+<div align="center">
+
+<img width="600" height="460" alt="rotato1" src="https://github.com/user-attachments/assets/01fa9c60-7bb9-4a1d-ad64-4088f0c2bdf5" />
+
+**Login → Scan → Edit**
+
+</div>
+
+---
+
+## Overview
 
 Tracking calories by hand is a big waste of time, so I created Platescan as a free alternative to other options to assist me in an efficient physical health journey.
 
@@ -23,15 +33,9 @@ Juno Dela Cruz
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=flat&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/juno-dela-cruz/)
 [![GitHub](https://img.shields.io/badge/GitHub-181717?style=flat&logo=github&logoColor=white)](https://github.com/junodelacruz)
 
-## Features
+## Additional Features
 
 <div align="center">
-
-<img width="600" height="460" alt="rotato1" src="https://github.com/user-attachments/assets/01fa9c60-7bb9-4a1d-ad64-4088f0c2bdf5" />
-
-**Login → Scan → Edit**
-
----
 
 <img width="600" height="460" alt="rotato2" src="https://github.com/user-attachments/assets/fa1c83cc-55a0-451b-8e45-f8b384d4134e" />
 
@@ -52,3 +56,12 @@ Juno Dela Cruz
 ---
 
 </div>
+
+## Tech Stack
+
+- **Frontend:** Expo, React Native Web (installable PWA)
+- **Backend:** Node.js, Express, SQLite (better-sqlite3)
+- **AI:** Google Gemini API, proxied through the backend
+- **Image processing:** sharp (resizes uploads to WebP with thumbnails)
+- **Auth:** JWT, single-user
+- **Deployment:** Docker Compose on a home server, NGINX Proxy Manager, DuckDNS
