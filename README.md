@@ -67,3 +67,14 @@ Juno Dela Cruz
 - **Image processing:** sharp (resizes uploads to WebP with thumbnails)
 - **Auth:** JWT, single-user
 - **Deployment:** Docker Compose on a home server, NGINX Proxy Manager, DuckDNS
+
+## How It Works
+
+```mermaid
+flowchart LR
+  A[PWA - Expo / RN Web] -->|HTTPS| B[NGINX Proxy Manager]
+  B --> C[Express API]
+  C --> D[(SQLite)]
+  C --> E[Image files]
+  C -->|scan request| F[Gemini API]
+```
