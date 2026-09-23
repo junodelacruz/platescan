@@ -72,9 +72,21 @@ Juno Dela Cruz
 
 ```mermaid
 flowchart LR
-  A[PWA - Expo / RN Web] -->|HTTPS| B[NGINX Proxy Manager]
-  B --> C[Express API]
-  C --> D[(SQLite)]
-  C --> E[Image files]
-  C -->|scan request| F[Gemini API]
+  A[PWA<br/>Expo / RN Web] -->|1 - photo + context| B[NGINX Proxy Manager]
+  B -->|2 - forward| C[Express API]
+  C -->|3 - analyze| F[Gemini API]
+  F -->|4 - items, macros| C
+  C -->|5 - review data| A
+  A -->|6 - confirm: metadata + image| B
+  B -->|7 - forward| C
+  C -->|8 - save| D[(SQLite)]
+  C -->|8 - save| E[Image files]
 ```
+
+When you snap a photo, the app sends the image and optional context to the backend via HTTPS. NGINX Proxy Manager receives this HTTPS request and routes it to the Express API container on my personal home lab. The backend takes the request and calls Gemini to process the items with a two pass scan. One scan estimates the portions of the food items, the second scan provides a breakdown of the nutritional value in each item. The backend returns the estimated calories and macros, letting the user review the content in the frontend. Once confirmed, the "Add to plate" button is clicked firing a function to send plate metadata and images back to the Express API container, which uploads and writes the images and plate metadata into the SQLite databases and disk. 
+
+## Limitations/Roadmap
+
+As stated before, this is a single-user web application. Plans for making it multi-user have been thought about, but not acted upon.
+
+Next steps: Bug fixes and polishing, possible multi-user support. 
