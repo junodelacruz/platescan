@@ -90,3 +90,5 @@ When you snap a photo, the app sends the image and optional context to the backe
 As stated before, this is a single-user web application. Plans for making it multi-user have been thought about, but not acted upon.
 
 Next steps: Bug fixes and polishing, possible multi-user support. 
+
+Previous implementations: Local Asynchronous storage migration to home lab backend, calendar, Weight log/tracker, UI/UX overhauls, bottom navigation bar.
